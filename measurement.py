@@ -39,6 +39,9 @@ class MeasurementStorage(): # make as singleton!
         num_pnt - number of point start from: 1, end: 156
         '''
         return self.psi_pnts[num_pnt - 1].MTE_signal
+    
+    def get_binom_signal(self, num_pnt, num_binom=0):
+        return self.psi_pnts[num_pnt - 1].Binom_signals
 
     def set_etalon_measured_signal(self, ):
         pass
@@ -59,20 +62,70 @@ class MeasurementStorage(): # make as singleton!
         result - (Ua, phaseUa),....(Ic, phaseIc)
         '''
         mte_signal = self.get_mte_signal(num_pnt)  # no need num_pnt - 1, get_mte_signal makes it 
+
+        d1 = 0
         main_freq_vec = mte_signal.get_main_freq_vector()
         main_freq_vec.update(meas_vals)
 
+        #mte_signal.
+
+        d2 = 0
+
+    
+    def calc_error(self, num_pnt):
+        self.psi_pnts[num_pnt - 1].calc_inaccuracy()
 
 # this class inner implementation 
 class PSIPointMesurement:
     def __init__(self, num_pnt, etalon_signal, mte_signal):
         self.num_pnt = num_pnt
-        self.etalon_signal = etalon_signal       # place signal from CSV type Signal
-        self.MTE_signal = mte_signal             # place signal return from MTE
-        self.Binom_signals = vs.MeasuredSignal() # [] in future it must be list of Binoms
+        self.etalon_signal = etalon_signal       
+        self.MTE_signal = mte_signal             
+        self.Binom_signals = vs.MeasuredSignal() 
 
     def calc_inaccuracy(self):
-        pass
+        '''
+        calc errors on each measurement
+        '''
+        main_freq_vec = measurement_storage.get_etalon_signal(1).get_main_freq_vector()
+        nominalU = main_freq_vec.get_ampl("Ua")
+        nominalI = main_freq_vec.get_ampl("Ia")
+        for name, err_type in names_par.link_measured_params_errors.items():
+            etalon_val   = self.etalon_signal.meas_result
+            mte_meas_res = self.MTE_signal.meas_result
+            binom_meas_res = self.Binom_signals
+            
+            delta_MTE   =  abs(mte_meas_res.results[name] - etalon_val.results[name])
+            delta_Binom =  abs(binom_meas_res.results[name] - etalon_val.results[name]) # use abs fund
+            if err_type == "absolute":
+                mte_meas_res.errors[name] = delta_MTE
+                binom_meas_res.errors[name] = delta_Binom
+            elif err_type == "reduced":
+
+                #---------------------------------#
+                #-Проверка на ноль! Номинал тока может быть равен нулю!!!!
+                #---------------------------------#
+                try:
+                    nom = nominalU if name[0] == "U" else nominalI
+                    mte_meas_res.errors[name] = (delta_MTE / nom ) * 100
+                    binom_meas_res.errors[name] = (delta_Binom / nom) * 100
+                except ZeroDivisionError as er:
+                    mte_meas_res.errors[name] = 9999999
+                    binom_meas_res.errors[name] = 9999999
+                '''
+                nom = nominalU if name[0] == "U" else nominalI
+                mte_meas_res.errors[name] = (delta_MTE / nom ) * 100
+                binom_meas_res.errors[name] = (delta_Binom / nom) * 100
+                '''
+            elif err_type == "relative":
+                try:
+                    mte_meas_res.errors[name] = (delta_MTE / etalon_val.results[name]) * 100
+                    binom_meas_res.errors[name] = (delta_Binom / etalon_val.results[name]) * 100
+                except ZeroDivisionError as er:
+                    mte_meas_res.errors[name] = 100000
+                    binom_meas_res.errors[name] = 100000
+
+           
 
 def make_signal_from_csv_source(txt_par_dict, num_pnt):
     '''

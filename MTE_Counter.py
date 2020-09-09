@@ -1067,7 +1067,7 @@ class C_MTE_Counter(C_MTE_device):
             #
             wr_str = "check_cnt_iter,"+str(check_gen_iter+1)+"\r\n"
             log_time_file.write(wr_str)
-            print(wr_str)
+            #print(wr_str)
             #
 
             self.ser_port.flushInput()
@@ -1082,7 +1082,7 @@ class C_MTE_Counter(C_MTE_device):
                 meas_vals = []# обнуление списков после каждой итерации опроса
                 
                 if ask_idx < 2:   
-                    print("textFromMTE"+textFromMTE)                  # Обработка ответов на запрос 1-ампл. тока, 2-ампл. напряжения
+                    #print("textFromMTE"+textFromMTE)                  # Обработка ответов на запрос 1-ампл. тока, 2-ампл. напряжения
                     meas_vals.extend(self.parse_MTE_answer_text(textFromMTE))
                     #for m_vals in meas_vals: print(m_vals)
 
@@ -1094,13 +1094,13 @@ class C_MTE_Counter(C_MTE_device):
                         else: cur_delta = 0
                     
                         if cur_delta > delta:
-                            print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + \
-                                str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                            #print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + \
+                            #    str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                             set_PSI_point_flag.append(False)
                         else: set_PSI_point_flag.append(True)
 
                 elif ask_idx == 2 or ask_idx == 3:  # 2 - phase_UU,  3 - phase_UI
-                    print("textFromMTE"+textFromMTE)
+                    #print("textFromMTE"+textFromMTE)
                     meas_vals.extend(self.parse_MTE_answer_text(textFromMTE))
 
                     if ask_idx == 2:
@@ -1138,23 +1138,23 @@ class C_MTE_Counter(C_MTE_device):
                         else: cur_delta = 0
 
                         if cur_delta > delta:
-                            print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                            #print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                             set_PSI_point_flag.append(False)
                         else: 
                             set_PSI_point_flag.append(True)
 
-                    print("meas_vals: "+str(meas_vals[0])+" "+str(meas_vals[1])+" "+str(meas_vals[2])+" ")
-                    print("etal_vals: "+str(etalon_vals[ask_idx*3])+" "+str(etalon_vals[ask_idx*3+1])+" "+str(etalon_vals[ask_idx*3+2])+" ")
+                    #print("meas_vals: "+str(meas_vals[0])+" "+str(meas_vals[1])+" "+str(meas_vals[2])+" ")
+                    #print("etal_vals: "+str(etalon_vals[ask_idx*3])+" "+str(etalon_vals[ask_idx*3+1])+" "+str(etalon_vals[ask_idx*3+2])+" ")
 
                     #for m_vals in meas_vals: print(m_vals)
 
                 else:
                     measfreq = self.parse_MTE_answer_Freq(textFromMTE)
-                    print("vfreq: "+str(measfreq))
+                    #print("vfreq: "+str(measfreq))
                     if etalon_vals[phase_idx] != 0.0: cur_delta = abs((etalon_freq - measfreq)/etalon_freq) * 100.0
                     else: cur_delta = 0
                     if cur_delta > delta:
-                        print("Error in Frequency measured value: " + str(measfreq)+" etalon value: " + str(etalon_freq) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                        #print("Error in Frequency measured value: " + str(measfreq)+" etalon value: " + str(etalon_freq) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                         set_PSI_point_flag.append(False)
                     else: set_PSI_point_flag.append(True)
                         
@@ -1168,7 +1168,7 @@ class C_MTE_Counter(C_MTE_device):
             wr_str = "after check_CNT iter,"+str(dt.datetime.now())+","+str(dt.datetime.now().hour)+ ","+str(dt.datetime.now().minute)+ ","+str(dt.datetime.now().second)+ ","+"\r\n"
             #wr_str = "after check_CNT iter,"+str(datetime.datetime.now().time())+"\r\n"
             log_time_file.write(wr_str)
-            print(wr_str)
+            #print(wr_str)
             #
 
             if check_set_PSI == True:

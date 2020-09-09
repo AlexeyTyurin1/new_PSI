@@ -51,7 +51,7 @@ class RequestBinom():
             self.channel_open = False
 
     #def read_data(self, num_psi_pnt, cnt=1, pause=5 ):
-    def read_data(self, num_psi_pnt, cnt=1, pause=0.75 ):
+    def read_data(self, num_psi_pnt, cnt=1, pause=2 ):
         '''
         read_data - read data from svg channel
         num_psi_pnt - number point PSI

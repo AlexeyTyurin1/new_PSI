@@ -234,7 +234,7 @@ class C_MTE_Generator(C_MTE_device):
         '''#
         wr_str = "after OFF_signal,"+str(datetime.datetime.now().time())+"\r\n"
         log_time_file.write(wr_str)
-        print(wr_str)
+        #print(wr_str)
         #'''
         ###########################################
         ###########################################
@@ -266,7 +266,7 @@ class C_MTE_Generator(C_MTE_device):
         wr_str = "after send_to_MTE(cmd_base_param),"+str(dt.datetime.now())+","+str(dt.datetime.now().hour)+ ","+str(dt.datetime.now().minute)+ ","+str(dt.datetime.now().second)+ ","+"\r\n"
         #wr_str = "after send_to_MTE(cmd_base_param),"+str(datetime.datetime.now().time())+"\r\n"
         log_time_file.write(wr_str)
-        print(wr_str)
+        #print(wr_str)
         #
         # 'Проверка по генератору'
         #3.5 - Установить сигнал на выходе генератора
@@ -276,7 +276,7 @@ class C_MTE_Generator(C_MTE_device):
         wr_str = "after SET_cmd,"+str(dt.datetime.now())+","+str(dt.datetime.now().hour)+ ","+str(dt.datetime.now().minute)+ ","+str(dt.datetime.now().second)+ ","+"\r\n"
         #wr_str = "after SET_cmd,"+str(datetime.datetime.now().time())+"\r\n"
         log_time_file.write(wr_str)
-        print(wr_str)
+        #print(wr_str)
         #
 
         #3.6 - "Проверка по генератору" по сигналу основной частоты
@@ -294,11 +294,13 @@ class C_MTE_Generator(C_MTE_device):
                 self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)
 
                 if self.is_PSI_pnt_set == False:
-                    print("Set PSI point again - Fail. PSI point still non set.\n Off signal on generator \n Back to main menu")
+                    #print("Set PSI point again - Fail. PSI point still non set.\n Off signal on generator \n Back to main menu")
+                    
                     counter_for_reset = 0
                     maxIter_reset_cmd = 10
                     while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
                         #self.is_PSI_pnt_set = True
+                        print("Trying to set PSI point again " + str(counter_for_reset+1))
                         self.SET_cmd()
                         self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)
                         counter_for_reset += 1
@@ -388,14 +390,14 @@ class C_MTE_Generator(C_MTE_device):
         wr_str = "before check_PSI_point Generator,"+str(dt.datetime.now())+","+str(dt.datetime.now().hour)+ ","+str(dt.datetime.now().minute)+ ","+str(dt.datetime.now().second)+ ","+"\r\n"
         #wr_str = "before check_PSI_point Generator,"+str(datetime.datetime.now().time())+"\r\n"
         log_time_file.write(wr_str)
-        print(wr_str)
+        #print(wr_str)
         #
 
         for check_gen_iter in range(N_total_iter):              # Внешний цикл по итерациям - опрос-анализ ответа от МТЕ
             #
             wr_str = "check_gen_iter, "+str(check_gen_iter+1)+"\r\n"
             log_time_file.write(wr_str)
-            #print(wr_str)
+            ##print(wr_str)
             #
 
             self.ser_port.flushInput()
@@ -479,7 +481,7 @@ class C_MTE_Generator(C_MTE_device):
             wr_str = "after iter Generator,"+str(dt.datetime.now())+","+str(dt.datetime.now().hour)+ ","+str(dt.datetime.now().minute)+ ","+str(dt.datetime.now().second)+ ","+"\r\n"
             #wr_str = "after iter Generator,"+str(datetime.datetime.now().time())+"\r\n"
             log_time_file.write(wr_str)
-            #print(wr_str)
+            ##print(wr_str)
             #
             ###########################################
             ###########################################

@@ -106,34 +106,15 @@ def get_measured_power_names():
     return ("Pa", "Pb", "Pc", "Qa", "Qb", "Qc", "Sa", "Sb", "Sc", "P", "Q", "S")
 
 
-'''
-names_measured_params = ("F",) +  get_measured_vltg_names() + \
-                        get_measured_vltg_angle_names() + \
-                        get_measured_current_names() + \
-                        get_measured_current_angle_names() + \
-                        get_measured_cosPhi_names() + \
-                        get_measured_sequences_names() + \
-                        get_measured_power_names()
-'''
-'''
 link_measured_params_errors = dict()
 link_measured_params_errors.update( (("F","absolute"),) )
-link_measured_params_errors.update(dict().fromkeys(get_measured_vltg_names(), "reduced"))  # reduced error or conventional error - приведённая погрешность
-link_measured_params_errors.update(dict().fromkeys(get_measured_current_names(), "reduced"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_current_angle_names(), "absolute"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_cosPhi_names(), "absolute"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_sequences_names(), "reduced"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_power_names(), "relative"))
-'''
-link_measured_params_errors = dict()
-link_measured_params_errors.update( (("F","absolute"),) )
-link_measured_params_errors.update(dict().fromkeys(get_measured_vltg_names(), "reduced"))  # reduced error or conventional error - приведённая погрешность
-link_measured_params_errors.update(dict().fromkeys(get_measured_vltg_angle_names(), "absolute"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_current_names(), "reduced"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_current_angle_names(), "absolute"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_cosPhi_names(), "absolute"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_sequences_names(), "reduced"))
-link_measured_params_errors.update(dict().fromkeys(get_measured_power_names(), "relative"))
+link_measured_params_errors.update(dict.fromkeys(get_measured_vltg_names(), "reduced"))  # reduced error or conventional error - приведённая погрешность
+link_measured_params_errors.update(dict.fromkeys(get_measured_vltg_angle_names(), "absolute"))
+link_measured_params_errors.update(dict.fromkeys(get_measured_current_names(), "reduced"))
+link_measured_params_errors.update(dict.fromkeys(get_measured_current_angle_names(), "absolute"))
+link_measured_params_errors.update(dict.fromkeys(get_measured_cosPhi_names(), "absolute"))
+link_measured_params_errors.update(dict.fromkeys(get_measured_sequences_names(), "reduced"))
+link_measured_params_errors.update(dict.fromkeys(get_measured_power_names(), "relative"))
 
 names_measured_params = link_measured_params_errors.keys()
 
