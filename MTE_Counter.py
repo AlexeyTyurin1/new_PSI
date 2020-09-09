@@ -1022,10 +1022,8 @@ class C_MTE_Counter(C_MTE_device):
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def check_PSI_pnt(self,sig, exist_harms_flag, log_time_file): 
-
         if exist_harms_flag == True:
             return self.check_PSI_point_harms(sig)
-
 
         ask_str_mas = ["?2;","?1;","?21;","?9;","?13;"]      
         meas_vals = []
@@ -1036,11 +1034,10 @@ class C_MTE_Counter(C_MTE_device):
         main_sig = sig.get_main_freq_vector()
         etalon_freq = sig.get_frequency()
         measfreq = 0
-
         keys_vect_dict = ["Ua", "Ub", "Uc", "Ia", "Ib", "Ic"]
         etalon_vals = []
-
-        for idx_keys in keys_vect_dict: etalon_vals.append(main_sig.get_ampl(idx_keys))
+        for idx_keys in keys_vect_dict: 
+            etalon_vals.append(main_sig.get_ampl(idx_keys))
 
         for idx_k in range(len(keys_vect_dict)):    
             
@@ -1063,12 +1060,9 @@ class C_MTE_Counter(C_MTE_device):
 
         for check_gen_iter in range(N_total_iter):              # Внешний цикл по итерациям - опрос-анализ ответа от МТЕ
             print("check_cnt_iter: "+str(check_gen_iter+1))
-            
-            #
+
             wr_str = "check_cnt_iter,"+str(check_gen_iter+1)+"\r\n"
             log_time_file.write(wr_str)
-            #print(wr_str)
-            #
 
             self.ser_port.flushInput()
             self.ser_port.flushOutput()         
@@ -1103,7 +1097,12 @@ class C_MTE_Counter(C_MTE_device):
                     #print("textFromMTE"+textFromMTE)
                     meas_vals.extend(self.parse_MTE_answer_text(textFromMTE))
 
+                    for t_idx in range(3):
+                        meas_vals[t_idx] *= (-1)
+                        
                     if ask_idx == 2:
+                        #meas_vals[2] = meas_vals[2] #*(-1)
+                        #meas_vals[1] = meas_vals[0] *(-1)
                         meas_vals[2] = meas_vals[2] *(-1)
                         meas_vals[1] = meas_vals[0] #*(-1)
                         meas_vals[0] = 0.0
@@ -1118,10 +1117,8 @@ class C_MTE_Counter(C_MTE_device):
                         if etalon_vals[phase_idx - 3*(ask_idx-1)] == 0.0:
                             continue
 
-                        #meas_vals[t_idx] *= (-1)
                         if (meas_vals[t_idx] < -180.0): meas_vals[t_idx] += 360
-                        if (meas_vals[t_idx] > 180.0): meas_vals[t_idx] -= 360
-                        #'''                             
+                        if (meas_vals[t_idx] > 180.0): meas_vals[t_idx] -= 360                            
 
                         if abs((abs(etalon_vals[phase_idx]) - 180.0)) < margin_angle:
                             if abs((abs(meas_vals[t_idx]) - 180.0)) < margin_angle:
@@ -1129,8 +1126,6 @@ class C_MTE_Counter(C_MTE_device):
                                     meas_vals[t_idx] = abs(meas_vals[t_idx])
                                 else:
                                     meas_vals[t_idx] = (-1)*abs(meas_vals[t_idx])
-
-                                
 
                         if etalon_vals[phase_idx] != 0.0: cur_delta = abs((etalon_vals[phase_idx] - \
                             meas_vals[t_idx])/etalon_vals[phase_idx]) * 100.0
@@ -1163,14 +1158,12 @@ class C_MTE_Counter(C_MTE_device):
                 if flag_elem == False:
                     check_set_PSI = False
                     break
-
             #
             wr_str = "after check_CNT iter,"+str(dt.datetime.now())+","+str(dt.datetime.now().hour)+ ","+str(dt.datetime.now().minute)+ ","+str(dt.datetime.now().second)+ ","+"\r\n"
             #wr_str = "after check_CNT iter,"+str(datetime.datetime.now().time())+"\r\n"
             log_time_file.write(wr_str)
             #print(wr_str)
             #
-
             if check_set_PSI == True:
                 break
             

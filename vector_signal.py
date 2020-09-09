@@ -68,10 +68,9 @@ class Signal:
 
     def set_frequency(self, freq):
         self.frequency = freq
-    
+
     def get_frequency(self):
         return self.frequency
-
 
     def get_vector_interharm(self, num_interharm):
         '''
@@ -125,7 +124,18 @@ class Signal:
         phase_names = names_par.get_phase_voltage_names() if name == 'vltg' else names_par.get_phase_current_names() 
         for name in phase_names:
             value = 0
+            '''
+            flag1 = True
+            if flag1 == True:
+                flag1 = False
+                continue
+            t = vec_val.get_ampl(name)
+            '''
+
             for vec_val in self.set_harmonics: #.values():
+                
+                if len(vec_val.storage) == 0:
+                    continue
                 value += vec_val.get_ampl(name) ** 2
             res.append(value ** 0.5)
         self.meas_result.update(**{nm_phase: value for nm_phase, value in zip(phase_names, res)})
@@ -163,7 +173,24 @@ class Signal:
         calc_phase_current - calc rms current I = sqrt(I2^2 + I3^2 + ...)
         '''
         self.__calc_rms_value(name="current")
-    
+
+    def __calc_currents_angles(self):
+
+        nm_angles = names_par.get_measured_current_angle_names()
+        phiA = self.set_harmonics[0].get_phase("Ia")
+        phiB = self.set_harmonics[0].get_phase("Ib")
+        phiC = self.set_harmonics[0].get_phase("Ic")
+
+        sign_A = 1 if phiA - phiB >= 0 else -1
+        sign_B = 1 if phiB - phiC >= 0 else -1
+        sign_C = 1 if phiC - phiA >= 0 else -1
+
+        angle_Iab = phiA - phiB if np.abs(phiA - phiB) < 180 else phiA - phiB - 360 * sign_A   # check it
+        angle_Ibc = phiB - phiC if np.abs(phiB - phiC) < 180 else phiB - phiC - 360 * sign_B
+        angle_Ica = phiC - phiA if np.abs(phiC - phiA) < 180 else phiC - phiA - 360 * sign_C
+        self.meas_result.update(**{angle: val for angle, val in zip(nm_angles, (angle_Iab, angle_Ibc, angle_Ica))})
+        
+        
     def __calc_cosPhi(self):    #  rewrite
         '''
         calc_cos_phi - calc cos phi * (between U and I)
@@ -226,6 +253,7 @@ class Signal:
         self.__calc_phase_voltage()
         self.__calc_voltage_angles()
         self.__calc_phase_current()
+        self.__calc_currents_angles()
         self.__calc_cosPhi()
         self.__calc_symmetrical_sequences()
 

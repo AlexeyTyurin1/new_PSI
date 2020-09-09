@@ -62,13 +62,11 @@ class MeasurementStorage(): # make as singleton!
         result - (Ua, phaseUa),....(Ic, phaseIc)
         '''
         mte_signal = self.get_mte_signal(num_pnt)  # no need num_pnt - 1, get_mte_signal makes it 
-
-        d1 = 0
         main_freq_vec = mte_signal.get_main_freq_vector()
         main_freq_vec.update(meas_vals)
 
-        #mte_signal.
-
+        mte_signal.calc_measured_param()
+ 
         d2 = 0
 
     
@@ -80,7 +78,8 @@ class PSIPointMesurement:
     def __init__(self, num_pnt, etalon_signal, mte_signal):
         self.num_pnt = num_pnt
         self.etalon_signal = etalon_signal       
-        self.MTE_signal = mte_signal             
+        self.MTE_signal = mte_signal  
+        #self.MTE_signal = vs.MeasuredSignal()            
         self.Binom_signals = vs.MeasuredSignal() 
 
     def calc_inaccuracy(self):

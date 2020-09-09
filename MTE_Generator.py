@@ -281,31 +281,19 @@ class C_MTE_Generator(C_MTE_device):
 
         #3.6 - "Проверка по генератору" по сигналу основной частоты
         if (self.flag_exist_cur_harm != True) or (self.flag_exist_vol_harm != True):    # Если нет гармоник проверка только по основной частоте
-            
             #self.SET_cmd()
             delta = 2.0 # [%]
-
             self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)         
             #3.6.1 - Если с первого раза точка не установилась, то попробовать еще раз
-            
             if self.is_PSI_pnt_set == False:                            
-                print("Trying to set PSI point again")
-                self.SET_cmd()
-                self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)
-
-                if self.is_PSI_pnt_set == False:
-                    #print("Set PSI point again - Fail. PSI point still non set.\n Off signal on generator \n Back to main menu")
-                    
-                    counter_for_reset = 0
-                    maxIter_reset_cmd = 10
-                    while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
-                        #self.is_PSI_pnt_set = True
-                        print("Trying to set PSI point again " + str(counter_for_reset+1))
-                        self.SET_cmd()
-                        self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)
-                        counter_for_reset += 1
+                counter_for_reset = 0
+                maxIter_reset_cmd = 10
+                while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
+                    print("Trying to set PSI point again " + str(counter_for_reset+1))
+                    self.SET_cmd()
+                    self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)
+                    counter_for_reset += 1
         else:
-
             # сначала проверка по основной частоте с большой дельта
             counter_for_reset = 0
             maxIter_reset_cmd = 10
@@ -321,14 +309,13 @@ class C_MTE_Generator(C_MTE_device):
             #self.SET_cmd()
             self.send_direct_cmd("?1\r")    # искусственная пауза
             '''
-
             self.is_PSI_pnt_set = self.check_PSI_point_harms(sig)
 
             counter_for_reset = 0
             maxIter_reset_cmd = 3
 
             while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
-                #self.is_PSI_pnt_set = True
+                print("Trying to set PSI point HARMS again " + str(counter_for_reset+1))
                 self.ser_port.timeout = 4
                 self.SET_cmd()
                 self.is_PSI_pnt_set = self.check_PSI_point_harms(sig)
@@ -399,7 +386,6 @@ class C_MTE_Generator(C_MTE_device):
             log_time_file.write(wr_str)
             ##print(wr_str)
             #
-
             self.ser_port.flushInput()
             self.ser_port.flushOutput()         
             set_PSI_point_flag.clear()
@@ -411,12 +397,9 @@ class C_MTE_Generator(C_MTE_device):
                 textFromMTE = textFromMTE.decode()
                 #meas_vals.clear() 
                 meas_vals = []  # обнуление списков после каждой итерации опроса
-                
                 if ask_idx < 2:                     # Обработка ответов на запрос 1-ампл. тока, 2-ампл. напряжения
                     meas_vals.extend(self.parse_MTE_answer_text(textFromMTE))
-                    
                     #for m_vals in meas_vals: print(m_vals)
-
                     for t_idx in range(3):
                         phase_idx = ask_idx*3 + t_idx
                         if etalon_vals[phase_idx] != 0.0: cur_delta = abs((etalon_vals[phase_idx] - \
@@ -438,7 +421,7 @@ class C_MTE_Generator(C_MTE_device):
                         if etalon_vals[phase_idx - 3*(ask_idx-1)] == 0.0:
                             continue
 
-                        meas_vals[t_idx] *= (-1)
+                        #################meas_vals[t_idx] *= (-1)
                         if (meas_vals[t_idx] < -180.0): meas_vals[t_idx] += 360
                         if (meas_vals[t_idx] > 180.0): meas_vals[t_idx] -= 360
                         

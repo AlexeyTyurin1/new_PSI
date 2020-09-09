@@ -32,8 +32,8 @@ import report
 #-----------------------------------------------------------------------------------#
 def main():
 
-    #debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
-    debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
+    debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
+    #debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
 
     log_time_file = open("Time_log.txt", "w")     # 'a'	открытие на дозапись, информация добавляется в конец файла.
     log_time_file.flush()
@@ -94,7 +94,7 @@ def init_main_MTE():
 def do_PSI(log_time_file):
     
     st_pnt = 1
-    end_pnt = 1
+    end_pnt = 3
     if not check_pnts(st_pnt, end_pnt):
         return
 
@@ -105,7 +105,6 @@ def do_PSI(log_time_file):
     #set_pnts_for_PSI, ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
     ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
     
-
     while cur_pnt <= end_pnt:
         print("\r\n"+"current PSI point is "+str(cur_pnt)+"\r\n")
         #1.3 - Set PSI point on Generator

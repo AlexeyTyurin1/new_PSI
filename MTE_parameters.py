@@ -96,13 +96,13 @@ class C_MTE_parameters():
         Ib = vec_par.get_ampl("Ib")
         Ic = vec_par.get_ampl("Ic")
 
-        ph_U_a = vec_par.get_phase("Ua")
-        ph_U_b = vec_par.get_phase("Ub")
-        ph_U_c = vec_par.get_phase("Uc")
+        ph_U_a = vec_par.get_phase("Ua") * (-1)
+        ph_U_b = vec_par.get_phase("Ub") * (-1)
+        ph_U_c = vec_par.get_phase("Uc") * (-1)
 
-        ph_I_a = vec_par.get_phase("Ia") - ph_U_a
-        ph_I_b = vec_par.get_phase("Ib") - ph_U_b
-        ph_I_c = vec_par.get_phase("Ic") - ph_U_c
+        ph_I_a = (vec_par.get_phase("Ia") - vec_par.get_phase("Ua")) * (-1)
+        ph_I_b = (vec_par.get_phase("Ib") - vec_par.get_phase("Ub")) * (-1)
+        ph_I_c = (vec_par.get_phase("Ic") - vec_par.get_phase("Uc")) * (-1)
         ########################################################################
         # найти максимальный элемент U и I -> выбрать нужный верхний диапазон -> установить команду на счетчик МТЕ
         self.range_U_CNT = []
