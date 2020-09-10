@@ -32,8 +32,8 @@ import report
 #-----------------------------------------------------------------------------------#
 def main():
 
-    debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
-    #debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
+    #debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
+    debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
 
     log_time_file = open("Time_log.txt", "w")     # 'a'	открытие на дозапись, информация добавляется в конец файла.
     log_time_file.flush()
@@ -93,8 +93,8 @@ def init_main_MTE():
 #-----------------------------------------------------------------------------------#
 def do_PSI(log_time_file):
     
-    st_pnt = 1
-    end_pnt = 3
+    st_pnt = 15
+    end_pnt = 17
     if not check_pnts(st_pnt, end_pnt):
         return
 
@@ -129,14 +129,15 @@ def do_PSI(log_time_file):
                 counter_MTE.readByTimeT(readTime,MTE_measured_Time)
                 counter_MTE.stop_auto_measure()#9 - выключить режим автовыдачи результатов после окончания интеравала записи Т
                 # получить усредненные данные 'короткой посылки' от счетчика МТЕ
-                short_MTE_data_block = counter_MTE.get_mean_values()
-                #for elem in short_MTE_data_block:
+                freq, short_MTE_data_block = counter_MTE.get_mean_values()
+
+                #for elem in short_MTE_data_block: 
                 #    print("elem "+str(elem))
-                measurement.measurement_storage.set_mte_measured_signal(cur_pnt,short_MTE_data_block)
+
+                measurement.measurement_storage.set_mte_measured_signal(cur_pnt,freq,short_MTE_data_block)
                 #   set_mte_measured_signal(self, num_pnt, meas_vals):
 
-        for _ in range(1):
-            make_psi.binom_data.read_data(cur_pnt)
+        for _ in range(1): make_psi.binom_data.read_data(cur_pnt)
 
         cur_pnt+=1
 

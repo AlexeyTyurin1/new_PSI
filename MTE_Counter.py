@@ -365,12 +365,12 @@ class C_MTE_Counter(C_MTE_device):
 
                 if mas_prefix.startswith("EL"):               # для частоты
 
-                    freq_mean = sum(self.prefix_mas[mas_prefix])/len(self.prefix_mas[mas_prefix])
-                    print(" freq:  mean: " + str(freq_mean) + "   numElem: " + str(len(self.prefix_mas[mas_prefix])))
+                    self.freq_mean = sum(self.prefix_mas[mas_prefix])/len(self.prefix_mas[mas_prefix])
+                    print(" freq:  mean: " + str(self.freq_mean) + "   numElem: " + str(len(self.prefix_mas[mas_prefix])))
                     for i_val in range(int(len(self.prefix_mas[mas_prefix]))):
                         text_file.write("%f," % self.prefix_mas[mas_prefix][i_val])
 
-                    text_file.write("  mean_Freq,   "+str(freq_mean))
+                    text_file.write("  mean_Freq,   "+str(self.freq_mean))
                     text_file.write("\r\n\r\n")
                     '''
                 elif result_List_Handler.resultList_mas[3+result_List_Handler.num_resLen*mas_idx] == 10:      # для абсолютных фазовых сдвигов
@@ -439,7 +439,7 @@ class C_MTE_Counter(C_MTE_device):
         self.list_angle_full.extend(self.list_phi_UU_mean)
         self.list_angle_full.extend(self.list_phi_UI_mean)
 
-        return zip(self.list_ampl_full,self.list_angle_full)
+        return self.freq_mean, zip(self.list_ampl_full,self.list_angle_full)
 
 ##################################################################################################
 ##################################################################################################
