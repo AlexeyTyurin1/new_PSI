@@ -55,7 +55,7 @@ class MeasurementStorage(): # make as singleton!
         '''
         self.psi_pnts[num_pnt - 1].Binom_signals.update(**kwarg)
     
-    def set_mte_measured_signal(self, num_pnt, freq, meas_vals):
+    def set_mte_measured_signal(self, num_pnt, freq, list_ampl_full,list_angle_full):
         '''
         set values measured by MTE
         num_pnt - number point 
@@ -63,15 +63,10 @@ class MeasurementStorage(): # make as singleton!
         '''
         mte_signal = self.get_mte_signal(num_pnt)  # no need num_pnt - 1, get_mte_signal makes it 
         main_freq_vec = mte_signal.get_main_freq_vector()
-        main_freq_vec.update(meas_vals)
-
+        main_freq_vec.update(zip(list_ampl_full,list_angle_full))
+        
         mte_signal.set_frequency(freq)
-
-        # Эталонный сигнал нужен для расчета углов фазовых сдвигов токов
-        etalon_signal = self.get_etalon_signal(num_pnt)
-        mte_signal.calc_measured_param(etalon_signal.meas_result)
- 
-        d2 = 0
+        mte_signal.calc_measured_param()
 
     
     def calc_error(self, num_pnt):
@@ -181,8 +176,7 @@ def make_signal_from_csv_source(txt_par_dict, num_pnt):
             harm.set(name, nominals[3 + ind] * percent_ii / 100, 0)
         # signal.add_interharm(names_par.get_num_harm(ui_name), harm)
     
-    #signal.calc_measured_param()
-    signal.calc_measured_param_for_etalon()
+    signal.calc_measured_param()
     
     # return signal
      

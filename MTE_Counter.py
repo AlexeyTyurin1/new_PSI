@@ -71,7 +71,7 @@ class C_MTE_Counter(C_MTE_device):
             "       8 - Phase angles between voltages [°]: phiU1U2, phiU2U3, phiU3U1",  0,     22,     
             "       9 - Phase angles between currents [°]: phiI1I2, phiI2I3, phiI3I1",  0,     23,
             "       10 - Absolute phase angles (r-virtual reference) [°]: \
-        phiAbsU1, phiAbsU2, phiAbsU3, phiAbsI1, phiAbsI2, phiAbsI3",                    0,    35,
+        phiAbsU1, phiAbsU2, phiAbsU3, phiAbsI1, phiAbsI2, phiAbsI3",                    1,    35,
             "       11 - Frequency [Hz]: freq",                                         1,    13,
             "\r\n12 - Remove all elements from list",                                   0,    98,
             "\r\n13 - Back",                                                            0,    2345] 
@@ -162,7 +162,7 @@ class C_MTE_Counter(C_MTE_device):
         # списки для сохранения средних значений
         self.list_I_mean = []
         self.list_U_mean = []
-        self.list_phi_UI_mean = []
+        self.list_phi_II_mean = []
         self.list_phi_UU_mean = []
         self.freq_mean = 0
 
@@ -233,7 +233,6 @@ class C_MTE_Counter(C_MTE_device):
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def readByTimeT(self,readTime,MTE_measured_Time):
-
         numElemInResultList = 0     # подсчет числа элементов в списке результатов
         realNumByte = 0
         margin_percent = 7.5
@@ -242,13 +241,13 @@ class C_MTE_Counter(C_MTE_device):
         for number in range(self.len_resultList_mas):                     # подсчет того, сколько элементов в списке выдачи результатов будет
             if self.resultList_mas[number*self.num_elem_in_row + 1] == 1:
                 if self.resultList_mas[number*self.num_elem_in_row + 2] == 10:  # abs angles
-                    realNumByte = realNumByte + 58
+                    realNumByte += 58
                 elif self.resultList_mas[number*self.num_elem_in_row + 2] == 4:  # angles U I 
-                    realNumByte = realNumByte + 11
+                    realNumByte += 11
                 elif self.resultList_mas[number*self.num_elem_in_row + 2] == 11:  # angles U I 
-                    realNumByte = realNumByte + 13
+                    realNumByte += 13
                 else:
-                    realNumByte = realNumByte + 31
+                    realNumByte += 31
 
                 numElemInResultList = numElemInResultList + 1
 
@@ -318,28 +317,15 @@ class C_MTE_Counter(C_MTE_device):
                     if freq != -1: self.prefix_mas["EL"].append(freq)
 
                 elif cur_str.startswith("El"):  # абсолютные фазовые углы
-                    '''
-                    phU1r, phU2r, phU3r, phI1r, phI2r, phI3r = parse_ABS_angles(cur_str)
-                    result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]].append(phU1r)
-                    result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]].append(phU2r)
-                    result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]].append(phU3r)
-                    result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]].append(phI1r)
-                    result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]].append(phI2r)
-                    result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]].append(phI3r)
+                    self.prefix_mas["El"].extend(self.parse_MTE_answer_ANGLES_No_CR(cur_str))
 
-                    result_List_Handler.resultList_mas[6+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]] = result_List_Handler.resultList_mas[6+result_List_Handler.num_resLen*result_List_Handler.resultList_mas[10*result_List_Handler.num_resLen+3]] + 1
-                    '''
                 else:
-                    
                     for prefix_keys in self.prefix_mas:                     # Сохранение распарсенных данных в списки
                         if cur_str.startswith(prefix_keys):
                             vA, vB, vC = self.parse_MTE_answer_No_CR(cur_str)
                             if vA != -1: self.prefix_mas[prefix_keys].append(vA)
                             if vB != -1: self.prefix_mas[prefix_keys].append(vB)
                             if vC != -1: self.prefix_mas[prefix_keys].append(vC)
-                            
-                            #self.prefix_mas[prefix_keys].append(vB)
-                            #self.prefix_mas[prefix_keys].append(vC)
                             break
                 
         #mean_Received_Data()    #4 усреднение принятых данных
@@ -347,14 +333,17 @@ class C_MTE_Counter(C_MTE_device):
         #4 усреднение принятых данных
         self.list_I_mean = []
         self.list_U_mean = []
-        self.list_phi_UI_mean = []
-        self.list_phi_UU_mean = []
+        #self.list_phi_II_mean = []
+        #self.list_phi_UU_mean = []
         self.freq_mean = 0
 
         self.list_phiABS_mean = []
 
+        """
         text_file = open("Output.txt", "w")     # 'a'	открытие на дозапись, информация добавляется в конец файла.
         text_file.flush()
+        """
+        text_file = 0
 
         for mas_prefix in self.prefix_mas: 
             cur_List_len = len(self.prefix_mas[mas_prefix])
@@ -367,60 +356,27 @@ class C_MTE_Counter(C_MTE_device):
 
                     self.freq_mean = sum(self.prefix_mas[mas_prefix])/len(self.prefix_mas[mas_prefix])
                     print(" freq:  mean: " + str(self.freq_mean) + "   numElem: " + str(len(self.prefix_mas[mas_prefix])))
-                    for i_val in range(int(len(self.prefix_mas[mas_prefix]))):
-                        text_file.write("%f," % self.prefix_mas[mas_prefix][i_val])
 
-                    text_file.write("  mean_Freq,   "+str(self.freq_mean))
-                    text_file.write("\r\n\r\n")
-                    '''
-                elif result_List_Handler.resultList_mas[3+result_List_Handler.num_resLen*mas_idx] == 10:      # для абсолютных фазовых сдвигов
-                    
-                    calc_mean_phiABS_ABC(result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*mas_idx][0:cur_List_len:6],\
-                                        result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*mas_idx][1:cur_List_len:6],\
-                                        result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*mas_idx][2:cur_List_len:6],\
-                                        result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*mas_idx][3:cur_List_len:6],\
-                                        result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*mas_idx][4:cur_List_len:6],\
-                                        result_List_Handler.resultList_mas[5+result_List_Handler.num_resLen*mas_idx][5:cur_List_len:6],\
-                                        list_phiABS_mean,text_file)  
-                    '''
-                else:                               # для прочих списков
-                    if mas_prefix.startswith("E@"): 
-                        self.calc_mean_ABC( self.prefix_mas[mas_prefix][0:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][1:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][2:cur_List_len:3],\
-                                            self.list_I_mean,text_file)   
-                    if mas_prefix.startswith("EA"): 
-                        self.calc_mean_ABC( self.prefix_mas[mas_prefix][0:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][1:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][2:cur_List_len:3],\
-                                            self.list_U_mean,text_file) 
-                    if mas_prefix.startswith("EH"): 
-                        self.calc_mean_ABC( self.prefix_mas[mas_prefix][0:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][1:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][2:cur_List_len:3],\
-                                            self.list_phi_UI_mean,text_file)
-                    if mas_prefix.startswith("E^"): 
-                        self.calc_mean_ABC( self.prefix_mas[mas_prefix][0:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][1:cur_List_len:3],\
-                                            self.prefix_mas[mas_prefix][2:cur_List_len:3],\
-                                            self.list_phi_UU_mean,text_file)                       
+                elif mas_prefix.startswith("El"):       # для абсолютных фазовых сдвигов
+                    self.calc_mean_ABC_angle(   self.prefix_mas[mas_prefix][0:cur_List_len:6],\
+                                                self.prefix_mas[mas_prefix][1:cur_List_len:6],\
+                                                self.prefix_mas[mas_prefix][2:cur_List_len:6],\
+                                                self.prefix_mas[mas_prefix][3:cur_List_len:6],\
+                                                self.prefix_mas[mas_prefix][4:cur_List_len:6],\
+                                                self.prefix_mas[mas_prefix][5:cur_List_len:6],\
+                                                self.list_phiABS_mean,text_file) 
 
-        '''
-        # данные для "упаковки короткой посылки"
-        # формат: в списках 3 элемента: измерения по фазе А, измерения по фазе B, измерения по фазе C 
-        # Пример: list_I_mean = {mean_I_A, mean_I_B, mean_I_C}
-        Функция: get_mean_values()   
-        list_I_mean = []
-        list_U_mean = []
-        list_phi_UI_mean = []
-        list_phi_UU_mean = []
-        freq_mean = 0
-        '''
+                elif mas_prefix.startswith("E@"): 
+                    self.calc_mean_ABC( self.prefix_mas[mas_prefix][0:cur_List_len:3],\
+                                        self.prefix_mas[mas_prefix][1:cur_List_len:3],\
+                                        self.prefix_mas[mas_prefix][2:cur_List_len:3],\
+                                        self.list_I_mean,text_file) 
 
-
-
-        text_file.close()
-
+                elif mas_prefix.startswith("EA"): 
+                    self.calc_mean_ABC( self.prefix_mas[mas_prefix][0:cur_List_len:3],\
+                                        self.prefix_mas[mas_prefix][1:cur_List_len:3],\
+                                        self.prefix_mas[mas_prefix][2:cur_List_len:3],\
+                                        self.list_U_mean,text_file)                    
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
@@ -428,25 +384,24 @@ class C_MTE_Counter(C_MTE_device):
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def get_mean_values(self):    
-        #return self.list_I_mean, self.list_U_mean,self.list_phi_UI_mean, self.list_phi_UU_mean, self.freq_mean
-
         self.list_ampl_full = []
         self.list_angle_full = []
 
         self.list_ampl_full.extend(self.list_U_mean)
         self.list_ampl_full.extend(self.list_I_mean)
 
-        self.list_angle_full.extend(self.list_phi_UU_mean)
-        self.list_angle_full.extend(self.list_phi_UI_mean)
+        self.list_angle_full.extend(self.list_phiABS_mean)
+        #self.list_angle_full.extend(self.list_phi_UU_mean)
+        #self.list_angle_full.extend(self.list_phi_II_mean)
 
-        return self.freq_mean, zip(self.list_ampl_full,self.list_angle_full)
+        return self.freq_mean, self.list_ampl_full, self.list_angle_full
 
 ##################################################################################################
 ##################################################################################################
 ##################################################################################################
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    #-----Вычисление мат ожидания для 3-х списков и запись в файл результатов
+    #-----Вычисление мат ожидания для 3-х списков
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def calc_mean_ABC(self,list_A, list_B, list_C, list_mean,text_file):
@@ -459,22 +414,85 @@ class C_MTE_Counter(C_MTE_device):
         list_mean.append(mean_B)
         list_mean.append(mean_C)
 
-        for i_val in range(int(len(list_A))):
-            text_file.write("%f," % list_A[i_val])
-        text_file.write("  mean_A,   "+str(mean_A)+"\r\n")
-
-        for i_val in range(int(len(list_B))):
-            text_file.write("%f," % list_B[i_val])
-        text_file.write("  mean_B,   "+str(mean_B)+"\r\n")
-
-        for i_val in range(int(len(list_C))):
-            text_file.write("%f," % list_C[i_val])
-        text_file.write("  mean_C,   "+str(mean_C))    
-
-        text_file.write("\r\n\r\n")
-
         print("mean_A, mean_B, mean_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2]))
+
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    #-----Вычисление мат ожидания по углам фазовых сдвигов для 3-х списков
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    def calc_mean_ABC_angle(self,list_U_A, list_U_B, list_U_C,list_I_A, list_I_B, list_I_C, list_mean,text_file):
         
+        # дебажный print
+        #max_len = max([len(list_A),len(list_B),len(list_C)])
+        '''
+        for elem in list_U_A: print("elem A: "+str(elem))
+        for elem in list_U_B: print("elem B: "+str(elem))
+        for elem in list_U_C: print("elem C: "+str(elem))
+        print("\r\n")
+        for elem in list_I_A: print("elem A: "+str(elem))
+        for elem in list_I_B: print("elem B: "+str(elem))
+        for elem in list_I_C: print("elem C: "+str(elem))
+        print("\r\n")
+        '''
+
+        # правильные списки значений
+        tr_list_U_A = []
+        tr_list_U_B = []
+        tr_list_U_C = []
+
+        tr_list_I_A = []
+        tr_list_I_B = []
+        tr_list_I_C = []
+
+        list_of_angle_list = [list_U_A, list_U_B, list_U_C,
+                              list_I_A, list_I_B, list_I_C]
+        
+        true_list_of_angle_list = [ tr_list_U_A, tr_list_U_B, tr_list_U_C,
+                                    tr_list_I_A, tr_list_I_B, tr_list_I_C]
+
+        #########################
+        list_index = 0
+
+        for elem_list in list_of_angle_list:
+            for elem in elem_list:
+                if elem != 9999.0:
+                    true_list_of_angle_list[list_index].append(elem)
+            # на случай если список вдруг пуст (актуально для точек где фазы тока равны нулю)
+            if len(true_list_of_angle_list[list_index]) == 0:
+                true_list_of_angle_list[list_index].append(0.0)
+
+            list_index += 1
+        '''
+        print("elems After\r\n")
+        for elem in tr_list_U_A: print("elem A: "+str(elem))
+        for elem in tr_list_U_B: print("elem B: "+str(elem))
+        for elem in tr_list_U_C: print("elem C: "+str(elem))
+        print("\r\n")
+        for elem in tr_list_I_A: print("elem A: "+str(elem))
+        for elem in tr_list_I_B: print("elem B: "+str(elem))
+        for elem in tr_list_I_C: print("elem C: "+str(elem))
+        print("\r\n")
+        '''
+        mean_U_A = sum(tr_list_U_A) / len(tr_list_U_A)
+        mean_U_B = sum(tr_list_U_B) / len(tr_list_U_B)
+        mean_U_C = sum(tr_list_U_C) / len(tr_list_U_C)
+
+        mean_I_A = sum(tr_list_I_A) / len(tr_list_I_A)
+        mean_I_B = sum(tr_list_I_B) / len(tr_list_I_B)
+        mean_I_C = sum(tr_list_I_C) / len(tr_list_I_C)
+
+        list_mean.append(mean_U_A)
+        list_mean.append(mean_U_B)
+        list_mean.append(mean_U_C)
+
+        list_mean.append(mean_I_A)
+        list_mean.append(mean_I_B)
+        list_mean.append(mean_I_C)
+
+        print("mean_U_A, mean_U_B, mean_U_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2])) 
+        print("mean_I_A, mean_I_B, mean_I_C: " + str(list_mean[3]) + "  "+str(list_mean[4]) + "  "+str(list_mean[5]))      
+
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     #-----Парсинг строки ответ "данные по 3-м фазам" без символа возврата каретки
@@ -510,6 +528,25 @@ class C_MTE_Counter(C_MTE_device):
             vC = -1 
 
         return vA, vB, vC
+
+        #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    #-----Парсинг строки ответ 
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    def parse_MTE_answer_ANGLES_No_CR(self,text_data): 
+        mStr = text_data.split(",")               # Делим строку результата на блоки.
+        len_mStr = len(mStr)
+        ang_list = []
+        for idx in range(1,7):
+            if len_mStr > idx:
+                if mStr[idx].startswith("--") or (len(mStr[idx]) <= 1): ang_list.append(9999.0)
+                else: ang_list.append(float(mStr[idx]))
+            else:
+                print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+                ang_list.append(9999.0)
+
+        return ang_list
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     #-----Парсинг строки ответ "частота" без символа возврата каретки
@@ -541,12 +578,9 @@ class C_MTE_Counter(C_MTE_device):
         print("1 - Start automatic sending result")
         print("0 - Stop automatic sending result")
         SU_num = int(input())
-        if SU_num == 1:
-            self.start_auto_measure()
-        elif SU_num == 0:
-            self.stop_auto_measure()
-        else:
-            print("Input wrong command 'SU_handler'")
+        if SU_num == 1:     self.start_auto_measure()
+        elif SU_num == 0:   self.stop_auto_measure()
+        else: print("Input wrong command 'SU_handler'")
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     #-----Обработчик времени измерения счетчика

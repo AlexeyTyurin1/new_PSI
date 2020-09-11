@@ -233,7 +233,6 @@ class C_MTE_parameters():
     #-----------------------------------------------------------------------------------#
     def find_ranges_CNT(self,val_a,val_b,val_c,res_list,max_ranges_dict):
         list_vals = [val_a,val_b,val_c]
-        #res_list = []
         for key_list_vals in list_vals:
             for key_dict in max_ranges_dict:
                 if key_list_vals < max_ranges_dict[key_dict] * 0.95:
@@ -248,7 +247,6 @@ class C_MTE_parameters():
     #-----------------------------------------------------------------------------------#
     def find_ranges_GEN(self,val_a,val_b,val_c,res_list,max_ranges_dict,GEN_TRUE_dict):
         list_vals = [val_a,val_b,val_c]
-        #res_list = []
         for key_list_vals in list_vals:
             for key_dict in max_ranges_dict:
                 if key_list_vals < max_ranges_dict[key_dict]:

@@ -147,59 +147,21 @@ class Signal:
         '''
         self.__calc_rms_value(name="vltg") 
 
-    def __calc_voltage_angles_for_etalon(self):
-        '''
-        calc angles between phases.
-        '''
-        nm_angles = names_par.get_measured_vltg_angle_names()
-        phiB = self.set_harmonics[0].get_phase("Ub")
-        phiC = self.set_harmonics[0].get_phase("Uc")
-        sign = 0
-        if phiB - phiC > 0:
-            sign = 1
-        elif phiB - phiC < 0:
-            sign = -1
-
-        angle_Uab = 0 - phiB
-        angle_Ubc = phiB - phiC if np.abs(phiB - phiC) < 180 else phiB - phiC - 360 * sign
-        angle_Uca = phiC
-
-        self.meas_result.update(**{angle: val for angle, val in zip(nm_angles, (angle_Uab, angle_Ubc, angle_Uca))})
-
-
     def __calc_voltage_angles(self):
-        '''
-        calc angles between phases.
-        '''
-        """
+
         nm_angles = names_par.get_measured_vltg_angle_names()
+
+        phiA = self.set_harmonics[0].get_phase("Ua")
         phiB = self.set_harmonics[0].get_phase("Ub")
         phiC = self.set_harmonics[0].get_phase("Uc")
-        sign = 0
-        if phiB - phiC > 0:
-            sign = 1
-        elif phiB - phiC < 0:
-            sign = -1
 
-        angle_Uab = 0 - phiB
-        angle_Ubc = phiB - phiC if np.abs(phiB - phiC) < 180 else phiB - phiC - 360 * sign
-        angle_Uca = phiC
+        sign_A = 1 if phiA - phiB >= 0.0 else -1
+        sign_B = 1 if phiB - phiC >= 0.0 else -1
+        sign_C = 1 if phiC - phiA >= 0.0 else -1
 
-        self.meas_result.update(**{angle: val for angle, val in zip(nm_angles, (angle_Uab, angle_Ubc, angle_Uca))})
-        """
-
-        # МТЕ сразу считает фазовые углы напряжения, как угол между напряжениями двух фаз,
-        # Результат измерения МТЕ: phiU1U2, phiU2U3, phiU3U1
-        #(фаза '1' = фаза 'А', фаза '2' = фаза 'B', фаза 32' = фаза 'C')
-        # где  phiU1U2 = угол между напряжением фазы 1 и напряжением фазы 2. 
-        # Следовательно, угол Uab == mte_Ang_phiU1U2
-        #                угол Ubc == mte_Ang_phiU2U3
-        #                угол Uca == mte_Ang_phiU3U1
-
-        nm_angles = names_par.get_measured_vltg_angle_names()
-        angle_Uab = self.set_harmonics[0].get_phase("Ua")
-        angle_Ubc = self.set_harmonics[0].get_phase("Ub")
-        angle_Uca = self.set_harmonics[0].get_phase("Uc")
+        angle_Uab = phiA - phiB if np.abs(phiA - phiB) < 180.0 else phiA - phiB - 360.0 * sign_A   # check it
+        angle_Ubc = phiB - phiC if np.abs(phiB - phiC) < 180.0 else phiB - phiC - 360.0 * sign_B
+        angle_Uca = phiC - phiA if np.abs(phiC - phiA) < 180.0 else phiC - phiA - 360.0 * sign_C
 
         self.meas_result.update(**{angle: val for angle, val in zip(nm_angles, (angle_Uab, angle_Ubc, angle_Uca))})
 
@@ -210,97 +172,61 @@ class Signal:
         '''
         self.__calc_rms_value(name="current")
 
-    def __calc_currents_angles_for_etalon(self):
-        
+    def __calc_currents_angles(self):
+
         nm_angles = names_par.get_measured_current_angle_names()
+
         phiA = self.set_harmonics[0].get_phase("Ia")
         phiB = self.set_harmonics[0].get_phase("Ib")
         phiC = self.set_harmonics[0].get_phase("Ic")
 
-        sign_A = 1 if phiA - phiB >= 0 else -1
-        sign_B = 1 if phiB - phiC >= 0 else -1
-        sign_C = 1 if phiC - phiA >= 0 else -1
+        sign_A = 1 if phiA - phiB >= 0.0 else -1
+        sign_B = 1 if phiB - phiC >= 0.0 else -1
+        sign_C = 1 if phiC - phiA >= 0.0 else -1
 
-        angle_Iab = phiA - phiB if np.abs(phiA - phiB) < 180 else phiA - phiB - 360 * sign_A   # check it
-        angle_Ibc = phiB - phiC if np.abs(phiB - phiC) < 180 else phiB - phiC - 360 * sign_B
-        angle_Ica = phiC - phiA if np.abs(phiC - phiA) < 180 else phiC - phiA - 360 * sign_C
+        angle_Iab = phiA - phiB if np.abs(phiA - phiB) < 180.0 else phiA - phiB - 360.0 * sign_A   # check it
+        angle_Ibc = phiB - phiC if np.abs(phiB - phiC) < 180.0 else phiB - phiC - 360.0 * sign_B
+        angle_Ica = phiC - phiA if np.abs(phiC - phiA) < 180.0 else phiC - phiA - 360.0 * sign_C
+
+        # если амплитуда тока по двум фазам равна нулю, то тогда и все фазовые углы между токами равны нулю
+        modA = self.set_harmonics[0].get_ampl("Ia")
+        modB = self.set_harmonics[0].get_ampl("Ib")
+        modC = self.set_harmonics[0].get_ampl("Ic")
+
+        f_mod_a = (modA <= 0.001)
+        f_mod_b = (modB <= 0.001)
+        f_mod_c = (modC <= 0.001)
+
+        if (f_mod_a and f_mod_b) or (f_mod_b and f_mod_c) or (f_mod_c and f_mod_a):
+            angle_Iab = 0.0
+            angle_Ibc = 0.0
+            angle_Ica = 0.0
 
         self.meas_result.update(**{angle: val for angle, val in zip(nm_angles, (angle_Iab, angle_Ibc, angle_Ica))})
-
-    def __calc_currents_angles(self, etalon_signal):
-
-        """
-        nm_angles = names_par.get_measured_current_angle_names()
-        phiA = self.set_harmonics[0].get_phase("Ia")
-        phiB = self.set_harmonics[0].get_phase("Ib")
-        phiC = self.set_harmonics[0].get_phase("Ic")
-
-        sign_A = 1 if phiA - phiB >= 0 else -1
-        sign_B = 1 if phiB - phiC >= 0 else -1
-        sign_C = 1 if phiC - phiA >= 0 else -1
-
-        angle_Iab = phiA - phiB if np.abs(phiA - phiB) < 180 else phiA - phiB - 360 * sign_A   # check it
-        angle_Ibc = phiB - phiC if np.abs(phiB - phiC) < 180 else phiB - phiC - 360 * sign_B
-        angle_Ica = phiC - phiA if np.abs(phiC - phiA) < 180 else phiC - phiA - 360 * sign_C
-        """
-
-        # МТЕ считает фазовые углы тока, как угол между напряжением и током по одной фазе,
-        # Результат измерения МТЕ: phiUI1, phiUI2, phiUI3
-        # где  phiUI1 = угол между током фазы 1 и напряжением фазы 1. (фаза '1' = фаза 'А')
-        # Следовательно, угол Iab == etalon_Ang_Uab - mte_Ang_phiUI1 + mte_Ang_phiUI2
-        #                угол Ibc == etalon_Ang_Ubc - mte_Ang_phiUI2 + mte_Ang_phiUI3
-        #                угол Ica == etalon_Ang_Uca - mte_Ang_phiUI3 + mte_Ang_phiUI1
-
-        #   etalon_signal.set_harmonics[0].get_phase("Ia")
-
-        nm_angles = names_par.get_measured_current_angle_names()
-        phiA = self.set_harmonics[0].get_phase("Ia")
-        phiB = self.set_harmonics[0].get_phase("Ib")
-        phiC = self.set_harmonics[0].get_phase("Ic")
-
-        etalon_Ang_Uab = etalon_signal.results["AngUab"]
-        etalon_Ang_Ubc = etalon_signal.results["AngUbc"]
-        etalon_Ang_Uca = etalon_signal.results["AngUca"]
-
-        angle_Iab = etalon_Ang_Uab - phiA + phiB
-        angle_Ibc = etalon_Ang_Ubc - phiB + phiC
-        angle_Ica = etalon_Ang_Uca - phiC + phiA
-
-        if angle_Iab >= 180.0: angle_Iab -= 360.0
-        if angle_Ibc >= 180.0: angle_Ibc -= 360.0
-        if angle_Ica >= 180.0: angle_Ica -= 360.0
-
-        if angle_Iab <= -180.0: angle_Iab += 360.0
-        if angle_Ibc <= -180.0: angle_Ibc += 360.0
-        if angle_Ica <= -180.0: angle_Ica += 360.0
-
-
-        self.meas_result.update(**{angle: val for angle, val in zip(nm_angles, (angle_Iab, angle_Ibc, angle_Ica))})
+    
         
-        
-    def __calc_cosPhi_for_etalon(self):    #  rewrite
+    def __calc_cosPhi(self):    #  rewrite
         '''
         calc_cos_phi - calc cos phi * (between U and I)
         '''
         angles = [self.set_harmonics[0].get_phase(name) for name in names_par.get_names_vector()]   # U_phiA, U_phiB, U_phiC, I_phiA, I_phiB, I_phiC 
         cosPhi_angles = [angles[i + 3] - angles[i] for i in range(3)]
+
+        # если амплитуда тока по двум фазам равна нулю, то тогда косинус фи по этой фазе равен нулю
+        modA = self.set_harmonics[0].get_ampl("Ia")
+        modB = self.set_harmonics[0].get_ampl("Ib")
+        modC = self.set_harmonics[0].get_ampl("Ic")
+
+        f_mod_a = (modA <= 0.001)
+        f_mod_b = (modB <= 0.001)
+        f_mod_c = (modC <= 0.001)
+
+        if f_mod_a: cosPhi_angles[0] = 0.0
+        if f_mod_b: cosPhi_angles[1] = 0.0
+        if f_mod_c: cosPhi_angles[2] = 0.0
+
         nm_angles = names_par.get_measured_cosPhi_names()
         self.meas_result.update(**{angle : np.cos(np.deg2rad(val)) for angle, val in zip(nm_angles, cosPhi_angles)})
-
-    def __calc_cosPhi(self):    #  rewrite
-        '''
-        calc_cos_phi - calc cos phi * (between U and I)
-        '''
-
-        cosPhi_angles = [0.0 for i in range(3)]
-
-        cosPhi_angles[0] = self.set_harmonics[0].get_phase("Ia")
-        cosPhi_angles[1] = self.set_harmonics[0].get_phase("Ib")
-        cosPhi_angles[2] = self.set_harmonics[0].get_phase("Ic")
-        
-        nm_angles = names_par.get_measured_cosPhi_names()
-        self.meas_result.update(**{angle : np.cos(np.deg2rad(val)) for angle, val in zip(nm_angles, cosPhi_angles)})
-
 
     def __convert_to_complex_num(self, vec_val):
         '''
@@ -347,29 +273,18 @@ class Signal:
             
         return 0
 
-    def calc_measured_param(self,etalon_signal):
+    def calc_measured_param(self):
         '''
-        calc all measurement parameters from signal
+        calc all measurement parameters from signal, 
         '''
         self.meas_result.set_frequency(self.frequency)
         self.__calc_phase_voltage()
         self.__calc_voltage_angles()
         self.__calc_phase_current()
-        self.__calc_currents_angles(etalon_signal)
+        self.__calc_currents_angles()
         self.__calc_cosPhi()
         self.__calc_symmetrical_sequences()
 
-    def calc_measured_param_for_etalon(self):
-        '''
-        calc all measurement parameters from signal for ETALON
-        '''
-        self.meas_result.set_frequency(self.frequency)
-        self.__calc_phase_voltage()
-        self.__calc_voltage_angles_for_etalon()
-        self.__calc_phase_current()
-        self.__calc_currents_angles_for_etalon()
-        self.__calc_cosPhi_for_etalon()
-        self.__calc_symmetrical_sequences()  
 
 class MeasuredSignal:
     '''
