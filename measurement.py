@@ -117,6 +117,10 @@ class PSIPointMesurement:
                 '''
             elif err_type == "relative":
                 try:
+                    if etalon_val.results[name] == 0.0:
+                        #mte_meas_res.errors[name] = delta_MTE
+                        #binom_meas_res.errors[name] = delta_Binom
+                        continue
                     mte_meas_res.errors[name] = (delta_MTE / etalon_val.results[name]) * 100
                     binom_meas_res.errors[name] = (delta_Binom / etalon_val.results[name]) * 100
                 except ZeroDivisionError as er:

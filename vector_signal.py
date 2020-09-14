@@ -259,6 +259,21 @@ class Signal:
         '''
         calc_power - calculates active, reactive, full power
         '''
+        complex_val = self.__convert_to_complex_num(self.set_harmonics[0])
+        U_complex = complex_val[:3]
+        I_complex = np.conjugate(complex_val[3:])
+        
+        #active_phase_power = np.real(I_complex * U_complex)
+        active_phase_power = np.real(U_complex * I_complex)
+        #reactive_phase_power = np.imag(I_complex * U_complex)
+        reactive_phase_power = np.imag(U_complex * I_complex)
+        full_phase_power = np.sqrt(active_phase_power ** 2 + reactive_phase_power ** 2)
+        full_active_power = np.sum(active_phase_power)
+        full_reactive_power = np.sum(reactive_phase_power)
+        full_power = np.sum(full_phase_power)
+        power_val = np.append(active_phase_power, (reactive_phase_power, full_phase_power))
+        power_val = np.append(power_val, (full_active_power, full_reactive_power, full_power))
+        self.meas_result.update(**{pwr_name : val for pwr_name, val in zip(names_par.get_measured_power_names(), power_val)})
 
         pass
 
@@ -284,6 +299,9 @@ class Signal:
         self.__calc_currents_angles()
         self.__calc_cosPhi()
         self.__calc_symmetrical_sequences()
+
+        self.__calc_power()
+
 
 
 class MeasuredSignal:
