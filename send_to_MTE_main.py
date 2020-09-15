@@ -1,7 +1,6 @@
 """ 
 MakeCmdFromCSV this module reads PSI scenariy.csv file and convert it to MTE comands
 """
-
 import serial
 
 import MTE_Counter
@@ -21,7 +20,6 @@ import datetime as dt
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
 def main():
-
     #debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
     debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
 
@@ -42,7 +40,8 @@ def main():
 #-----Функция инициализации Бинома
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
-def init_main_Binom():   
+def init_main_Binom():  
+    make_psi.deinit() 
     make_psi.init()
 
 #-----------------------------------------------------------------------------------#
@@ -78,8 +77,8 @@ def init_main_MTE():
 #-----------------------------------------------------------------------------------#
 def do_PSI(log_time_file):
     
-    st_pnt = 1
-    end_pnt = 25
+    st_pnt = 25
+    end_pnt = 55
     if not check_pnts(st_pnt, end_pnt):
         return
 
@@ -90,6 +89,7 @@ def do_PSI(log_time_file):
     #set_pnts_for_PSI, ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
     ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
     
+    #try:
     while cur_pnt <= end_pnt:
         print("\r\n"+"current PSI point is "+str(cur_pnt)+"\r\n")
         #1.3 - Set PSI point on Generator
@@ -108,12 +108,33 @@ def do_PSI(log_time_file):
 
             if set_PSI_pnt_flag_Counter == True:      # проверка установки точки ПСИ по генератору пройдена  
                 #4 Read data from MTE Counter
-                counter_MTE.start_auto_measure()    # Включить режим автовыдачи результатов               
+
+                ###################
+                # ищем начало 5-ти секундного интервала
+                py_second = dt.datetime.now().second
+                while py_second % 5 != 0:
+                    py_second = dt.datetime.now().second
+                    #py_year,py_month,py_day, py_hour,py_minute,py_second = counter_MTE.get_MTE_current_Time()
+                    #print(str(dt.datetime.now()))
+
+
+                counter_MTE.start_auto_measure()    # Включить режим автовыдачи результатов     
+
+                ##################
+                make_psi.binom_data.open_svg_channel()
+                ##################
+        
                 readTime = 5
                 MTE_measured_Time = 1
                 counter_MTE.readByTimeT(readTime,MTE_measured_Time)
-                counter_MTE.stop_auto_measure()#9 - выключить режим автовыдачи результатов после окончания интеравала записи Т
+
                 
+                # считать результаты измерений с Бинома
+                make_psi.binom_data.read_data(cur_pnt)
+
+                # выключить режим автовыдачи результатов после окончания интеравала записи Т
+                counter_MTE.stop_auto_measure()
+
                 # получить усредненные данные 'короткой посылки' от счетчика МТЕ
                 list_ampl_full = []
                 list_angle_full = []
@@ -121,18 +142,25 @@ def do_PSI(log_time_file):
                 # по непонятным причинам, передача измерений через zip не работает, поэтому передаю по списочно
                 measurement.measurement_storage.set_mte_measured_signal(cur_pnt,freq,list_ampl_full,list_angle_full)
 
-        # считать результаты измерений с Бинома
-        make_psi.binom_data.read_data(cur_pnt)
-
-        cur_pnt+=1
+                cur_pnt+=1
 
     #формирование отчета о ПСИ
     report.generate_report(st_pnt, end_pnt)
+    '''
+    except Exception as ex:
+        print("Exception occur:", ex)
+    finally:
+        ser_Counter.close()
+        ser_Generator.close()
+        make_psi.deinit()
+    '''
+
+    
+
+    
 
     print("Ask finished")
-    ser_Counter.close()
-    ser_Generator.close()
-    make_psi.deinit()
+    
 
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#

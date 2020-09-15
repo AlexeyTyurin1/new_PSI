@@ -265,11 +265,14 @@ class C_MTE_Counter(C_MTE_device):
         self.ser_port.flushInput()
         self.ser_port.flushOutput()
 
+        self.ser_port.timeout = 0.3
         prev_timeout = self.ser_port.timeout
+
         #print(" timeout "+str(readTime) + " symb_num " + str(symb_num))
         self.ser_port.timeout = readTime # [sec]
 
         read_textFromMTE = self.ser_port.read(symb_num)
+        #print("read_textFromMTE: "+read_textFromMTE.decode())
         self.ser_port.timeout = prev_timeout
         self.parse_accumulateResult_answer(read_textFromMTE)                      # парсинг результатов
 
@@ -1093,7 +1096,7 @@ class C_MTE_Counter(C_MTE_device):
         print("check_PSI_point Counter")
 
         for check_gen_iter in range(N_total_iter):              # Внешний цикл по итерациям - опрос-анализ ответа от МТЕ
-            print("check_cnt_iter: "+str(check_gen_iter+1))
+            #print("check_cnt_iter: "+str(check_gen_iter+1))
 
             wr_str = "check_cnt_iter,"+str(check_gen_iter+1)+"\r\n"
             log_time_file.write(wr_str)
@@ -1106,7 +1109,12 @@ class C_MTE_Counter(C_MTE_device):
             for ask_idx in range(len(ask_str_mas)):
                 self.ser_port.write(ask_str_mas[ask_idx].encode())  
                 textFromMTE = self.ser_port.read(800)
-                textFromMTE = textFromMTE.decode()
+                try:
+                    textFromMTE = textFromMTE.decode()
+                except: #expression as identifier:
+                    break
+                    #pass
+                
                 meas_vals = []# обнуление списков после каждой итерации опроса
                 
                 if ask_idx < 2:   
@@ -1205,7 +1213,7 @@ class C_MTE_Counter(C_MTE_device):
             self.ser_port.write("".encode())        # перерыв между опросами в одной итерации равный 1 секунде
             self.ser_port.timeout = 0.2
 
-        print("finally Counter: check_set_PSI == "+str(check_set_PSI))
+        #print("finally Counter: check_set_PSI == "+str(check_set_PSI))
         return check_set_PSI
 
     #-----------------------------------------------------------------------------------#
@@ -1213,8 +1221,10 @@ class C_MTE_Counter(C_MTE_device):
     #-----Установить на счетчике МТЕ текущее время (время компьютера)
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    def set_MTE_current_Time(self,py_t):
+    def set_MTE_current_Time(self):#,py_t):
         # формат команды: "TIME22,3,0,14,0,0;" - установить дату 22.03.2000, время 14:00:00
+        self.ser_port.timeout = 0.2
+        py_t = dt.datetime.now()
         list_py_t = [py_t.day, py_t.month, py_t.year - 2000, py_t.hour, py_t.minute, py_t.second]
         for elem in range(len(list_py_t)): list_py_t[elem] = str(list_py_t[elem])
         #dots = '..'

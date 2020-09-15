@@ -37,21 +37,20 @@ class RequestBinom():
             self.session = s
             self.connect_session = True
         # check channel names from binom
+        #'''
         out_ch = self.__ask_channel_out_names()
         self.__check_received_channel_names()
+        #'''
 
-
-      
-
-    
 
     def close_channel(self):
         if self.channel_open:
-            self.__close_channel()
+            #self.__close_channel()
+            self.__close_svg_channel()
             self.channel_open = False
 
     #def read_data(self, num_psi_pnt, cnt=1, pause=5 ):
-    def read_data(self, num_psi_pnt, cnt=1, pause=5 ):
+    def read_data(self, num_psi_pnt, cnt=1, pause= 3 ):
         '''
         read_data - read data from svg channel
         num_psi_pnt - number point PSI
@@ -60,9 +59,24 @@ class RequestBinom():
         example: obj.read_data(4, cnt=2, pause=5) - PSI 4 point makes 2 reading with delay 5s between readings
         and writes result to 4 point PSI
         '''
-        self.__open_svg_channel()
+
+        ####################################
+        ####################################
+        ####################################
+        #self.__open_svg_channel()
+        ####################################
+        ####################################
+        #self.open_svg_channel()
+        ####################################
+
         while cnt > 0:
-            time.sleep(pause)
+            ####################################
+            ####################################
+            ####################################
+            ##time.sleep(pause)
+            ####################################
+            ####################################
+            ####################################
 
             '''
             print("Request current time")
@@ -72,7 +86,11 @@ class RequestBinom():
             print("time: " + cur_time)
             '''
 
+            #request = "~svgcurrent?name=db:PSI_data"
+
             request = "~svgevent?name=db:PSI_data"
+
+            
             r = self.session.get(self.__create_request(request))
             print("Status code: ", r.status_code)
             print("Read data len ", len(r.content))
@@ -118,7 +136,8 @@ class RequestBinom():
             if names[0] != (names[1]):
                 raise Exception("Find incorrect names in Binom out ch")
 
-    def __open_svg_channel(self):
+    ##def __open_svg_channel(self):
+    def open_svg_channel(self):
         request = "~svgdata?name=db:PSI_data"
         r = self.session.get(self.__create_request(request))
         if r.status_code != 200:

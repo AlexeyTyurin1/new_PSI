@@ -289,7 +289,7 @@ class C_MTE_Generator(C_MTE_device):
                 counter_for_reset = 0
                 maxIter_reset_cmd = 10
                 while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
-                    print("Trying to set PSI point again " + str(counter_for_reset+1))
+                    #print("Trying to set PSI point again " + str(counter_for_reset+1))
                     self.SET_cmd()
                     self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)
                     counter_for_reset += 1
@@ -371,7 +371,7 @@ class C_MTE_Generator(C_MTE_device):
 
         self.ser_port.timeout = 0.2     # интервал между опросами коротких команд
         ##########################
-        print("check_PSI_point Generator")
+        #print("check_PSI_point Generator")
 
         #
         wr_str = "before check_PSI_point Generator,"+str(dt.datetime.now())+","+str(dt.datetime.now().hour)+ ","+str(dt.datetime.now().minute)+ ","+str(dt.datetime.now().second)+ ","+"\r\n"
@@ -476,7 +476,7 @@ class C_MTE_Generator(C_MTE_device):
             self.ser_port.write("".encode())        # перерыв между опросами в одной итерации равный 0.2 секунды
             self.ser_port.timeout = 0.2
 
-        print("finally Generator: check_set_PSI == "+str(check_set_PSI))
+        #print("finally Generator: check_set_PSI == "+str(check_set_PSI))
         return check_set_PSI
 
     #-----------------------------------------------------------------------------------#

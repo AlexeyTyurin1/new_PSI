@@ -226,12 +226,12 @@ class C_MTE_device:
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def get_MTE_Device_current_Time(self):              # парсить ответ от МТЕ по общим параметрам: 3 числа по 3 фазам
-        t_str = self.send_cmd_to_device("TIME")
+        t_str = self.send_cmd_to_device("TIME\r")
         #пример строки ответа: "TIME=22.03.00 14:00:03" ('00' == '2000')
         # получение строки после знака равно
         time_str = t_str.split("=")
         if len(time_str) != 2:
-            print("Wrong text_time_str. Length after split('=') not equal 2. 'time_str': "+time_str)
+            print("Wrong text_time_str. Length after split('=') not equal 2. 'time_str': "+str(time_str))
             return 0,0,0, 0,0,0     # дд.мм.гг чч:мм:сс
         
         d_t_str = time_str[1].split(" ")
