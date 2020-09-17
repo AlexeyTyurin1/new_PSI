@@ -329,6 +329,35 @@ class C_MTE_Generator(C_MTE_device):
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
+    #-----Получить измерения с генератора МТЕ. Считывание 1 раз, сохранение в списки, аналогично счетчику
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    def get_meas_from_generator(self):
+        ask_str_mas = ["?2;","?1;","?13;","?12;","FRQ;"]
+        self.ser_port.flushInput()
+        self.ser_port.flushOutput()  
+
+        meas_ampl = []       
+        meas_phase = [] 
+        measfreq = 0.0      
+
+        for ask_idx in range(len(ask_str_mas)):
+            self.ser_port.write(ask_str_mas[ask_idx].encode())  
+            textFromMTE = self.ser_port.read(800)
+            textFromMTE = textFromMTE.decode()
+            if ask_idx < 2:                     # Обработка ответов на запрос 1-ампл. тока, 2-ампл. напряжения
+                meas_ampl.extend(self.parse_MTE_answer_text(textFromMTE))
+            elif ask_idx == 2 or ask_idx == 3:  # 2 - phase_U,  3 - phase_I
+                meas_phase.extend(self.parse_MTE_answer_text(textFromMTE))
+            else:
+                measfreq = self.parse_MTE_answer_Freq_text(textFromMTE)
+
+        #return self.freq_mean, self.list_ampl_full, self.list_angle_full
+        return measfreq, meas_ampl, meas_phase
+            
+            
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
     #-----Обработчик 'проверки по генератору' по основной частоте
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#

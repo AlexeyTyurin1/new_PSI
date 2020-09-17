@@ -23,8 +23,9 @@ class MeasurementStorage(): # make as singleton!
         self.psi_pnts = []
         for i in range(1, 161):
             etalon = vs.Signal()
-            mte = vs.Signal()
-            self.psi_pnts.append(PSIPointMesurement(i, etalon, mte))
+            mte_CNT = vs.Signal()
+            mte_GEN = vs.Signal()
+            self.psi_pnts.append(PSIPointMesurement(i, etalon, mte_CNT, mte_GEN))
 
     def get_etalon_signal(self, num_pnt):
         '''
@@ -33,12 +34,19 @@ class MeasurementStorage(): # make as singleton!
         '''
         return self.psi_pnts[num_pnt - 1].etalon_signal
 
-    def get_mte_signal(self, num_pnt):
+    def get_mte_CNT_signal(self, num_pnt):
         '''
         Return mte signal(Signal measured by MTE)
         num_pnt - number of point start from: 1, end: 156
         '''
-        return self.psi_pnts[num_pnt - 1].MTE_signal
+        return self.psi_pnts[num_pnt - 1].MTE_CNT_signal
+
+    def get_mte_GEN_signal(self, num_pnt):
+        '''
+        Return mte signal(Signal measured by MTE)
+        num_pnt - number of point start from: 1, end: 156
+        '''
+        return self.psi_pnts[num_pnt - 1].MTE_GEN_signal
     
     def get_binom_signal(self, num_pnt, num_binom=0):
         return self.psi_pnts[num_pnt - 1].Binom_signals
@@ -55,13 +63,21 @@ class MeasurementStorage(): # make as singleton!
         '''
         self.psi_pnts[num_pnt - 1].Binom_signals.update(**kwarg)
     
-    def set_mte_measured_signal(self, num_pnt, freq, list_ampl_full,list_angle_full):
+    def set_mte_measured_signal(self, type_flag, num_pnt, freq, list_ampl_full,list_angle_full):
         '''
         set values measured by MTE
         num_pnt - number point 
         result - (Ua, phaseUa),....(Ic, phaseIc)
+        type_flag = 1 - измерения счетчика
+        type_flag = 2 - измерения генератора
         '''
-        mte_signal = self.get_mte_signal(num_pnt)  # no need num_pnt - 1, get_mte_signal makes it 
+        if type_flag == 2:
+            mte_signal = self.get_mte_CNT_signal(num_pnt)
+        elif type_flag == 1:
+            mte_signal = self.get_mte_GEN_signal(num_pnt)
+        else:
+            pass
+
         main_freq_vec = mte_signal.get_main_freq_vector()
         main_freq_vec.update(zip(list_ampl_full,list_angle_full))
         
@@ -74,10 +90,11 @@ class MeasurementStorage(): # make as singleton!
 
 # this class inner implementation 
 class PSIPointMesurement:
-    def __init__(self, num_pnt, etalon_signal, mte_signal):
+    def __init__(self, num_pnt, etalon_signal, mte_CNT_signal, mte_GEN_signal):
         self.num_pnt = num_pnt
         self.etalon_signal = etalon_signal       
-        self.MTE_signal = mte_signal  
+        self.MTE_CNT_signal = mte_CNT_signal  
+        self.MTE_GEN_signal = mte_GEN_signal  
         #self.MTE_signal = vs.MeasuredSignal()            
         self.Binom_signals = vs.MeasuredSignal() 
 
@@ -90,13 +107,23 @@ class PSIPointMesurement:
         nominalI = main_freq_vec.get_ampl("Ia")
         for name, err_type in names_par.link_measured_params_errors.items():
             etalon_val   = self.etalon_signal.meas_result
-            mte_meas_res = self.MTE_signal.meas_result
+            mte_CNT_meas_res = self.MTE_CNT_signal.meas_result
+            mte_GEN_meas_res = self.MTE_GEN_signal.meas_result
             binom_meas_res = self.Binom_signals
             
-            delta_MTE   =  abs(mte_meas_res.results[name] - etalon_val.results[name])
+            #delta_MTE_CNT   =  abs(mte_CNT_meas_res.results[name] - etalon_val.results[name])
+            delta_MTE_CNT = 0
+            delta_MTE_GEN   =  abs(mte_GEN_meas_res.results[name] - mte_CNT_meas_res.results[name])
+            delta_Binom =  abs(binom_meas_res.results[name] - mte_CNT_meas_res.results[name]) # use abs fund
+            
+            '''
+            delta_MTE_CNT   =  abs(mte_CNT_meas_res.results[name] - etalon_val.results[name])
+            delta_MTE_GEN   =  abs(mte_GEN_meas_res.results[name] - etalon_val.results[name])
             delta_Binom =  abs(binom_meas_res.results[name] - etalon_val.results[name]) # use abs fund
+            '''
             if err_type == "absolute":
-                mte_meas_res.errors[name] = delta_MTE
+                mte_CNT_meas_res.errors[name] = delta_MTE_CNT
+                mte_GEN_meas_res.errors[name] = delta_MTE_GEN
                 binom_meas_res.errors[name] = delta_Binom
             elif err_type == "reduced":
 
@@ -105,10 +132,12 @@ class PSIPointMesurement:
                 #---------------------------------#
                 try:
                     nom = nominalU if name[0] == "U" else nominalI
-                    mte_meas_res.errors[name] = (delta_MTE / nom ) * 100
+                    mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / nom ) * 100
+                    mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / nom ) * 100
                     binom_meas_res.errors[name] = (delta_Binom / nom) * 100
                 except ZeroDivisionError as er:
-                    mte_meas_res.errors[name] = 9999999
+                    mte_CNT_meas_res.errors[name] = 9999999
+                    mte_GEN_meas_res.errors[name] = 9999999
                     binom_meas_res.errors[name] = 9999999
                 '''
                 nom = nominalU if name[0] == "U" else nominalI
@@ -117,14 +146,21 @@ class PSIPointMesurement:
                 '''
             elif err_type == "relative":
                 try:
-                    if etalon_val.results[name] == 0.0:
+                    if mte_CNT_meas_res.results[name] == 0.0:
                         #mte_meas_res.errors[name] = delta_MTE
                         #binom_meas_res.errors[name] = delta_Binom
                         continue
-                    mte_meas_res.errors[name] = (delta_MTE / etalon_val.results[name]) * 100
+                    mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / mte_CNT_meas_res.results[name]) * 100
+                    mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / mte_CNT_meas_res.results[name]) * 100
+                    binom_meas_res.errors[name] = (delta_Binom / mte_CNT_meas_res.results[name]) * 100
+                    '''
+                    mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / etalon_val.results[name]) * 100
+                    mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / etalon_val.results[name]) * 100
                     binom_meas_res.errors[name] = (delta_Binom / etalon_val.results[name]) * 100
+                    '''
                 except ZeroDivisionError as er:
-                    mte_meas_res.errors[name] = 100000
+                    mte_CNT_meas_res.errors[name] = 100000
+                    mte_GEN_meas_res.errors[name] = 100000
                     binom_meas_res.errors[name] = 100000
 
            

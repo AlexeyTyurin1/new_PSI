@@ -83,10 +83,12 @@ class C_MTE_parameters():
     #-----а также определить диапазоны измерений генератора и счетчика МТЕ
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    def init_data(self,vec_par,main_freq):
+    def init_data(self,sig):
         '''
         generate_base_signal_commands for MTE generator: set FREQ, U, I, phase U, phase between U and I
         '''
+        vec_par = sig.get_main_freq_vector()
+        main_freq = sig.get_frequency()
         ########################################################################
         Ua = vec_par.get_ampl("Ua")
         Ub = vec_par.get_ampl("Ub")
@@ -123,6 +125,8 @@ class C_MTE_parameters():
 
         self.base_param_cmd +=  "I1,"+ str(Ia)+";"+ "I2,"+ str(Ib)+";"+ "I3,"+ str(Ic)+";"+\
                     "W1,"+str(ph_I_a)+";"+ "W2,"+str(ph_I_b)+";"+ "W3,"+str(ph_I_c) #+";"
+
+        self.generate_harm_cmd(sig)
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#

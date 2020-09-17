@@ -358,7 +358,7 @@ class C_MTE_Counter(C_MTE_device):
                 if mas_prefix.startswith("EL"):               # для частоты
 
                     self.freq_mean = sum(self.prefix_mas[mas_prefix])/len(self.prefix_mas[mas_prefix])
-                    print(" freq:  mean: " + str(self.freq_mean) + "   numElem: " + str(len(self.prefix_mas[mas_prefix])))
+                    #print(" freq:  mean: " + str(self.freq_mean) + "   numElem: " + str(len(self.prefix_mas[mas_prefix])))
 
                 elif mas_prefix.startswith("El"):       # для абсолютных фазовых сдвигов
                     self.calc_mean_ABC_angle(   self.prefix_mas[mas_prefix][0:cur_List_len:6],\
@@ -493,8 +493,8 @@ class C_MTE_Counter(C_MTE_device):
         list_mean.append(mean_I_B)
         list_mean.append(mean_I_C)
 
-        print("mean_U_A, mean_U_B, mean_U_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2])) 
-        print("mean_I_A, mean_I_B, mean_I_C: " + str(list_mean[3]) + "  "+str(list_mean[4]) + "  "+str(list_mean[5]))      
+        #print("mean_U_A, mean_U_B, mean_U_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2])) 
+        #print("mean_I_A, mean_I_B, mean_I_C: " + str(list_mean[3]) + "  "+str(list_mean[4]) + "  "+str(list_mean[5]))      
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#

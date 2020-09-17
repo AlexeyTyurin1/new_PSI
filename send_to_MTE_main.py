@@ -20,16 +20,16 @@ import datetime as dt
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
 def main():
-    #debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
-    debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
+    debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
+    #debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
 
     log_time_file = open("Time_log.txt", "w")     # 'a'	открытие на дозапись, информация добавляется в конец файла.
     log_time_file.flush()
 
     if debug_mode == True:
         TopMenuItems()
-        ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
-        HandleMenu(ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE,log_time_file)
+        counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
+        HandleMenu(counter_MTE, generator_MTE, parameters_MTE,log_time_file)
     else:
         do_PSI(log_time_file)
 
@@ -68,7 +68,7 @@ def init_main_MTE():
     #1.2.3 - MTE Parameters - класс для генерации команд установки сигнала на генератор МТЕ и диапазонов измерения на генератор и счетчик МТЕ
     parameters_MTE = MTE_parameters.C_MTE_parameters()
 
-    return ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE
+    return counter_MTE, generator_MTE, parameters_MTE
 
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
@@ -77,8 +77,8 @@ def init_main_MTE():
 #-----------------------------------------------------------------------------------#
 def do_PSI(log_time_file):
     
-    st_pnt = 25
-    end_pnt = 55
+    st_pnt = 1
+    end_pnt = 1
     if not check_pnts(st_pnt, end_pnt):
         return
 
@@ -87,39 +87,36 @@ def do_PSI(log_time_file):
     init_main_Binom()
     # Инициализация для управления МТЕ
     #set_pnts_for_PSI, ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
-    ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
+    counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
     
     #try:
     while cur_pnt <= end_pnt:
         print("\r\n"+"current PSI point is "+str(cur_pnt)+"\r\n")
         #1.3 - Set PSI point on Generator
-        #measurement.make_signal_from_csv_source(set_pnts_for_PSI, cur_pnt)    # 
         sig = measurement.measurement_storage.get_etalon_signal(cur_pnt)
-        parameters_MTE.init_data(sig.get_main_freq_vector(),sig.get_frequency())
-        parameters_MTE.generate_harm_cmd(sig)
+        parameters_MTE.init_data(sig)
         set_PSI_pnt_flag_Generator = generator_MTE.set_PSI_point(sig,parameters_MTE, log_time_file)
-
         if set_PSI_pnt_flag_Generator == True:      # проверка установки точки ПСИ по генератору пройдена  
             counter_MTE.ser_port.timeout = 1
             counter_MTE.set_ranges_for_CNT(parameters_MTE.get_ranges_CNT())     # Установка диапазонов для Счетчика
             # 1.3.2 - Check by Counter
-            set_PSI_pnt_flag_Counter = counter_MTE.check_PSI_pnt(sig,\
-                                    parameters_MTE.get_exist_harms_flag(), log_time_file)
-
+            set_PSI_pnt_flag_Counter = counter_MTE.check_PSI_pnt(sig, parameters_MTE.get_exist_harms_flag(), log_time_file)
             if set_PSI_pnt_flag_Counter == True:      # проверка установки точки ПСИ по генератору пройдена  
                 #4 Read data from MTE Counter
+
+                ###################     Установить время измерения генератора равным 5 секундам
+                meas_time = 5.0 # [sec.]
+                generator_MTE.ser_port.timeout = 0.2
+                generator_MTE.set_meas_time(meas_time)
 
                 ###################
                 # ищем начало 5-ти секундного интервала
                 py_second = dt.datetime.now().second
                 while py_second % 5 != 0:
                     py_second = dt.datetime.now().second
-                    #py_year,py_month,py_day, py_hour,py_minute,py_second = counter_MTE.get_MTE_current_Time()
-                    #print(str(dt.datetime.now()))
 
-
+                counter_MTE.ser_port.timeout = 0.3
                 counter_MTE.start_auto_measure()    # Включить режим автовыдачи результатов     
-
                 ##################
                 make_psi.binom_data.open_svg_channel()
                 ##################
@@ -128,21 +125,38 @@ def do_PSI(log_time_file):
                 MTE_measured_Time = 1
                 counter_MTE.readByTimeT(readTime,MTE_measured_Time)
 
-                
-                # считать результаты измерений с Бинома
-                make_psi.binom_data.read_data(cur_pnt)
-
                 # выключить режим автовыдачи результатов после окончания интеравала записи Т
                 counter_MTE.stop_auto_measure()
 
+                # считать результаты измерений с Бинома
+                make_psi.binom_data.read_data(cur_pnt)
+
+
+                ###################
+                # считать измерения с генератора МТЕ
+                list_Gen_ampl_full = []
+                list_Gen_angle_full = []
+                freq_Gen = 0.0
+                freq_Gen, list_Gen_ampl_full, list_Gen_angle_full = generator_MTE.get_meas_from_generator()
+                flag = 1
+                '''
+                for a_elem in zip(list_Gen_ampl_full, list_Gen_angle_full):
+                    print(str(a_elem[0])+" ")
+                    print(str(a_elem[1])+" ")
+                print(str(freq_Gen))
+                '''
+                measurement.measurement_storage.set_mte_measured_signal(flag,cur_pnt,freq_Gen,list_Gen_ampl_full,list_Gen_angle_full)
+                
                 # получить усредненные данные 'короткой посылки' от счетчика МТЕ
                 list_ampl_full = []
                 list_angle_full = []
-                freq, list_ampl_full, list_angle_full  = counter_MTE.get_mean_values()
+                freq_Cnt = 0.0
+                freq_Cnt, list_ampl_full, list_angle_full  = counter_MTE.get_mean_values()
                 # по непонятным причинам, передача измерений через zip не работает, поэтому передаю по списочно
-                measurement.measurement_storage.set_mte_measured_signal(cur_pnt,freq,list_ampl_full,list_angle_full)
+                flag = 2
+                measurement.measurement_storage.set_mte_measured_signal(flag,cur_pnt,freq_Cnt,list_ampl_full,list_angle_full)
 
-                cur_pnt+=1
+                cur_pnt += 1
 
     #формирование отчета о ПСИ
     report.generate_report(st_pnt, end_pnt)
@@ -155,19 +169,14 @@ def do_PSI(log_time_file):
         make_psi.deinit()
     '''
 
-    
-
-    
-
     print("Ask finished")
-    
 
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
 #-----Отладочный режим работы: консольное меню управления устройствами МТЕ
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
-def HandleMenu(ser_Counter, ser_Generator, counter_MTE, generator_MTE,parameters_MTE,log_time_file):
+def HandleMenu(counter_MTE, generator_MTE,parameters_MTE,log_time_file):
     """
     Main menu: control 'Generator MTE':PPS 400.3 and 'Counter MTE':PRS 440.3
     """
@@ -254,8 +263,8 @@ def HandleMenu(ser_Counter, ser_Generator, counter_MTE, generator_MTE,parameters
             
         TopMenuItems() 
     
-    ser_Counter.close()
-    ser_Generator.close()
+    counter_MTE.ser_port.close()
+    generator_MTE.ser_port.close()
 
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#

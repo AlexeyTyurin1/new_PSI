@@ -173,8 +173,11 @@ class RequestBinom():
         ms.measurement_storage.set_binom_measured_signal(num_psi_pnt, num_binom=0, **self.names_vals)
 
     def out_measurements(self):
+        '''
         for name, value in self.names_vals.items():
             print("{:^10s}".format(name), "=", value)
+        '''
+        pass
  
 
 
