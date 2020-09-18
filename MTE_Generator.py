@@ -341,6 +341,8 @@ class C_MTE_Generator(C_MTE_device):
         meas_phase = [] 
         measfreq = 0.0      
 
+        self.ser_port.timeout = 0.2
+
         for ask_idx in range(len(ask_str_mas)):
             self.ser_port.write(ask_str_mas[ask_idx].encode())  
             textFromMTE = self.ser_port.read(800)

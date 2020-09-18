@@ -105,7 +105,9 @@ class PSIPointMesurement:
         main_freq_vec = measurement_storage.get_etalon_signal(1).get_main_freq_vector()
         nominalU = main_freq_vec.get_ampl("Ua")
         nominalI = main_freq_vec.get_ampl("Ia")
-        for name, err_type in names_par.link_measured_params_errors.items():
+
+        #for name, err_type in names_par.link_measured_params_errors.items():
+        for name, _ in names_par.link_measured_params_errors.items():
             etalon_val   = self.etalon_signal.meas_result
             mte_CNT_meas_res = self.MTE_CNT_signal.meas_result
             mte_GEN_meas_res = self.MTE_GEN_signal.meas_result
@@ -121,47 +123,63 @@ class PSIPointMesurement:
             delta_MTE_GEN   =  abs(mte_GEN_meas_res.results[name] - etalon_val.results[name])
             delta_Binom =  abs(binom_meas_res.results[name] - etalon_val.results[name]) # use abs fund
             '''
-            if err_type == "absolute":
-                mte_CNT_meas_res.errors[name] = delta_MTE_CNT
-                mte_GEN_meas_res.errors[name] = delta_MTE_GEN
-                binom_meas_res.errors[name] = delta_Binom
-            elif err_type == "reduced":
+            #################################
+            #################################
+            '''
+            border_min_value = 0.00001 # 10^(-5)
+            if delta_MTE_CNT < border_min_value: delta_MTE_CNT = 0
+            if delta_MTE_GEN < border_min_value: delta_MTE_GEN = 0
+            if delta_Binom < border_min_value: delta_Binom = 0
+            '''
 
-                #---------------------------------#
-                #-Проверка на ноль! Номинал тока может быть равен нулю!!!!
-                #---------------------------------#
-                try:
-                    nom = nominalU if name[0] == "U" else nominalI
-                    mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / nom ) * 100
-                    mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / nom ) * 100
-                    binom_meas_res.errors[name] = (delta_Binom / nom) * 100
-                except ZeroDivisionError as er:
-                    mte_CNT_meas_res.errors[name] = 9999999
-                    mte_GEN_meas_res.errors[name] = 9999999
-                    binom_meas_res.errors[name] = 9999999
+            #################################
+            #################################
+
+            mte_CNT_meas_res.errors_abs[name] = delta_MTE_CNT
+            mte_GEN_meas_res.errors_abs[name] = delta_MTE_GEN
+            binom_meas_res.errors_abs[name] = delta_Binom
+
+            #---------------------------------#
+            #-Проверка на ноль! Номинал тока может быть равен нулю!!!!
+            #---------------------------------#
+            try:
+                if etalon_val.results[name] == 0.0:
+                    #mte_meas_res.errors[name] = delta_MTE
+                    #binom_meas_res.errors[name] = delta_Binom
+                    continue
+                mte_CNT_meas_res.errors_rel[name] = (delta_MTE_CNT / mte_CNT_meas_res.results[name]) * 100
+                mte_GEN_meas_res.errors_rel[name] = (delta_MTE_GEN / mte_CNT_meas_res.results[name]) * 100
+                binom_meas_res.errors_rel[name] = (delta_Binom / mte_CNT_meas_res.results[name]) * 100
                 '''
-                nom = nominalU if name[0] == "U" else nominalI
-                mte_meas_res.errors[name] = (delta_MTE / nom ) * 100
-                binom_meas_res.errors[name] = (delta_Binom / nom) * 100
+                mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / etalon_val.results[name]) * 100
+                mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / etalon_val.results[name]) * 100
+                binom_meas_res.errors[name] = (delta_Binom / etalon_val.results[name]) * 100
                 '''
-            elif err_type == "relative":
-                try:
-                    if mte_CNT_meas_res.results[name] == 0.0:
-                        #mte_meas_res.errors[name] = delta_MTE
-                        #binom_meas_res.errors[name] = delta_Binom
-                        continue
-                    mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / mte_CNT_meas_res.results[name]) * 100
-                    mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / mte_CNT_meas_res.results[name]) * 100
-                    binom_meas_res.errors[name] = (delta_Binom / mte_CNT_meas_res.results[name]) * 100
-                    '''
-                    mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / etalon_val.results[name]) * 100
-                    mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / etalon_val.results[name]) * 100
-                    binom_meas_res.errors[name] = (delta_Binom / etalon_val.results[name]) * 100
-                    '''
-                except ZeroDivisionError as er:
-                    mte_CNT_meas_res.errors[name] = 100000
-                    mte_GEN_meas_res.errors[name] = 100000
-                    binom_meas_res.errors[name] = 100000
+            except ZeroDivisionError as er:
+                mte_CNT_meas_res.errors_rel[name] = 100000
+                mte_GEN_meas_res.errors_rel[name] = 100000
+                binom_meas_res.errors_rel[name] = 100000
+
+            try:
+                #nom = nominalU if name[0] == "U" else nominalI     # Номинал - это номинал счетчика (57,735 В и 5 А)
+                if name[0] == "U":
+                    nom = nominalU
+                elif name[0] == "I":
+                    nom = nominalI
+                else:
+                    mte_CNT_meas_res.errors_red[name] = 0
+                    mte_GEN_meas_res.errors_red[name] = 0
+                    binom_meas_res.errors_red[name] = 0
+                    continue
+
+                mte_CNT_meas_res.errors_red[name] = (delta_MTE_CNT / nom ) * 100
+                mte_GEN_meas_res.errors_red[name]   = (delta_MTE_GEN / nom ) * 100
+                binom_meas_res.errors_red[name]     = (delta_Binom / nom) * 100
+            except ZeroDivisionError as er:
+                mte_CNT_meas_res.errors_red[name] = 9999999
+                mte_GEN_meas_res.errors_red[name] = 9999999
+                binom_meas_res.errors_red[name] = 9999999
+
 
            
 

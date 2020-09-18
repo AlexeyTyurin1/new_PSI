@@ -311,7 +311,9 @@ class MeasuredSignal:
     # measured_params = names_par.names_measured_params it's for optimization
     def __init__(self):
         self.results = dict.fromkeys(names_par.names_measured_params, 0)
-        self.errors = dict.fromkeys(names_par.names_measured_params, 0)
+        self.errors_abs = dict.fromkeys(names_par.names_measured_params, 0)
+        self.errors_rel = dict.fromkeys(names_par.names_measured_params, 0)
+        self.errors_red = dict.fromkeys(names_par.names_measured_params, 0)
     
     def set_frequency(self, freq):
         self.results["F"] = freq

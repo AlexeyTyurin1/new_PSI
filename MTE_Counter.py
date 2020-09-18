@@ -229,6 +229,37 @@ class C_MTE_Counter(C_MTE_device):
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
+    #-----Получить измерения со счетчика МТЕ. Считывание 1 раз, сохранение в списки, аналогично генератору
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    def get_meas_from_counter(self):
+        # Ampl_U, Ampl_I, Abs_Angle, Frq
+        ask_str_mas = ["?2;","?1;","?34;","?13;"]
+        self.ser_port.flushInput()
+        self.ser_port.flushOutput()  
+
+        meas_ampl = []       
+        meas_phase = [] 
+        measfreq = 0.0    
+
+        self.ser_port.timeout = 0.2
+
+        for ask_idx in range(len(ask_str_mas)):
+            self.ser_port.write(ask_str_mas[ask_idx].encode())  
+            textFromMTE = self.ser_port.read(800)
+            textFromMTE = textFromMTE.decode()
+            if ask_idx < 2:                     # Обработка ответов на запрос 1-ампл. тока, 2-ампл. напряжения
+                meas_ampl.extend(self.parse_MTE_answer_text(textFromMTE))
+            elif ask_idx == 2:
+                meas_phase.extend(self.parse_MTE_answer_ANGLES(textFromMTE))
+            else:
+                measfreq = self.parse_MTE_answer_Freq(textFromMTE)
+
+        #return self.freq_mean, self.list_ampl_full, self.list_angle_full
+        return measfreq, meas_ampl, meas_phase
+            
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
     #-----Считать данные за время Т
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
@@ -542,6 +573,31 @@ class C_MTE_Counter(C_MTE_device):
         len_mStr = len(mStr)
         ang_list = []
         for idx in range(1,7):
+            if len_mStr > idx:
+                if mStr[idx].startswith("--") or (len(mStr[idx]) <= 1): ang_list.append(9999.0)
+                else: ang_list.append(float(mStr[idx]))
+            else:
+                print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+                ang_list.append(9999.0)
+
+        return ang_list
+    
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    #-----Парсинг строки ответ 
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    def parse_MTE_answer_ANGLES(self,text_data): 
+        mStr = text_data.split(",")               # Делим строку результата на блоки.
+        len_mStr = len(mStr)
+        ang_list = []
+        for idx in range(1,7):
+            if idx == 6:
+                t_str = mStr[idx].split("\r")
+                if len(t_str) >= 0:
+                    ang_list.append(float(t_str[0]))
+                    continue
+
             if len_mStr > idx:
                 if mStr[idx].startswith("--") or (len(mStr[idx]) <= 1): ang_list.append(9999.0)
                 else: ang_list.append(float(mStr[idx]))

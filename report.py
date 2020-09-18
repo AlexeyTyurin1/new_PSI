@@ -78,28 +78,15 @@ def __write_meas_errors(wb_result, cur_pnt, meas_result, offset):
     sheet_name = get_sheet_name(cur_pnt)
     cur_range = wb_result.sheets[sheet_name].range(cur_col_output).offset(offset[0], offset[1])
     cur_range = cur_range.offset(1, 1)
-    # very slow speed below code
-    '''
-    for num, meas_par_name in enumerate(nm_par.link_measured_params_errors.keys()):
-        type_tolerance = nm_par.link_measured_params_errors[meas_par_name]
-        #  cur_range = cur_range.offset(0, num)
-        for row in range(0, 3):
-            if type_tolerance == "absolute" and row == 0:
-                cur_range.offset(row, num).value = meas_result.errors[meas_par_name]
-            elif type_tolerance == "relative" and row == 1:
-                cur_range.offset(row, num).value = meas_result.errors[meas_par_name]
-            elif type_tolerance == "reduced" and row == 2:
-                cur_range.offset(row, num).value = meas_result.errors[meas_par_name] 
-            else:
-                cur_range.offset(row, num).value = "-----"
-    '''
+
     # for num, meas_par_name in enumerate(nm_par.link_measured_params_errors.keys()):
-    
+    """
     for nm_err in ("absolute", "relative", "reduced"):
         err = [meas_result.errors[name] if type_tolerance == nm_err \
             else "-----"  for name, type_tolerance in nm_par.link_measured_params_errors.items()]
         cur_range.value = err
         cur_range = cur_range.offset(1, 0)
+    """
     
     
 def write_etalon_result(wb_result, cur_pnt):
@@ -140,51 +127,42 @@ def remove_default_sheets(wb_result):
 def generate_value_for_write(etalon,mte_CNT,mte_GEN,binom_result,cur_pnt): 
 
     etalon_res          = list(etalon.meas_result.results.values())
+
+    for idx in range(len(etalon_res)):
+        if etalon_res[idx] < 0.000001: # 10^(-6)
+            etalon_res[idx] = 0.0
+
     mte_CNT_res         = list(mte_CNT.meas_result.results.values())
     mte_GEN_res         = list(mte_GEN.meas_result.results.values())
     binom_result_res    = list(binom_result.results.values())
 
-    mte_CNT_err_abs = []
-    mte_CNT_err_rel = []
-    mte_CNT_err_red = []
+    list_err_res = [list(mte_CNT.meas_result.errors_abs.values()),
+                    list(mte_CNT.meas_result.errors_rel.values()),
+                    list(mte_CNT.meas_result.errors_red.values()),
 
-    mte_GEN_err_abs = []
-    mte_GEN_err_rel = []
-    mte_GEN_err_red = []
+                    list(mte_GEN.meas_result.errors_abs.values()),
+                    list(mte_GEN.meas_result.errors_rel.values()),
+                    list(mte_GEN.meas_result.errors_red.values()),
 
-    binom_result_err_abs = []
-    binom_result_err_rel = []
-    binom_result_err_red = []
+                    list(binom_result.errors_abs.values()),
+                    list(binom_result.errors_rel.values()),
+                    list(binom_result.errors_red.values()) ]
+    
+    for idx in range(len(list_err_res[0])):
+        list_err_res[0][idx] = ""
+        list_err_res[1][idx] = ""
+        list_err_res[2][idx] = ""
 
-    list_err_res = [mte_CNT_err_abs,mte_CNT_err_rel,mte_CNT_err_red,\
-                    mte_GEN_err_abs,mte_GEN_err_rel,mte_GEN_err_red,\
-                    binom_result_err_abs,binom_result_err_rel,binom_result_err_red]
+    for idx in range(len(list_err_res[5])):
+        if list_err_res[5][idx] == 0:
+            #list_err_res[2][idx] = ""
+            list_err_res[5][idx] = ""
+            list_err_res[8][idx] = ""
 
-    list_measurement = [mte_CNT,mte_GEN,binom_result]
 
     list_meas = [mte_CNT_res,mte_GEN_res,binom_result_res]
-    idx = 0
-    idx_inner = 0
-
-    for meas_elem in list_measurement:
-        idx_inner = 0
-        if idx == 2:
-            for nm_err in ("absolute", "relative", "reduced"): 
-                err = [meas_elem.errors[name] if type_tolerance == nm_err else "---"\
-                    for name, type_tolerance in nm_par.link_measured_params_errors.items()]
-                list_err_res[idx*3 + idx_inner] = err
-                idx_inner += 1
-        else:
-            for nm_err in ("absolute", "relative", "reduced"):
-                err = [meas_elem.meas_result.errors[name] if type_tolerance == nm_err else "---"\
-                    for name, type_tolerance in nm_par.link_measured_params_errors.items()]
-                list_err_res[idx*3 + idx_inner] = err
-                idx_inner += 1
-
-        idx += 1 
 
     ####
-
     for L_idx in range(len(list_err_res)):       # создание отступа на один столбец вправо
         list_err_res[L_idx].insert(0,"")
 
@@ -192,7 +170,7 @@ def generate_value_for_write(etalon,mte_CNT,mte_GEN,binom_result,cur_pnt):
         list_meas[L_idx].insert(0,cur_pnt)
     
     empty_list = []                         # пустая строка
-    for idx in range(len(list_err_res[0])):
+    for _ in range(len(list_err_res[0])):
         empty_list.append("")
 
     etalon_res.insert(0,cur_pnt)
@@ -241,6 +219,80 @@ def write_all_data_on_sheet(wb_result,cur_pnt):
     cur_range = wb_result.sheets[sheet_name].range(exel_range)
     cur_range.value = full_list
 
+    make_color_sell_diff(wb_result,cur_pnt,full_list)
+
+#------------------------------------------------------
+#----Сделать цветовую градуировку ячеек  
+#------------------------------------------------------
+def make_color_sell_diff(wb_result,cur_pnt,full_list):
+
+    '''
+    красный фон  =   (255,0,0)     - большое значение погрешности
+    серый        =   (128,128,128)     - не используемое в "метрологическом отчете" значение погрешности
+    светло серый =   (192,192,192)    - расчетные величины
+    '''
+    red_color = (255,0,0)
+    
+    # цикл по столбцам 
+    #   цикл по строке  (только строки с погрешностями)
+    #       если значение из списка full_list > 'порогового значения'
+    #           выделить эту ячейку красным цветом
+    '''
+    abs_max_diff = 0.005
+    rel_max_diff = 1
+    red_max_diff = 1
+
+    temp_idx = 0
+
+    for idx in range(3):
+        for inner_idx in range(len(full_list[0]) - 1):
+            
+            if full_list[temp_idx + 3 + idx*3][inner_idx] > abs_max_diff:
+                wb_result.sheets[get_sheet_name(cur_pnt)].range((temp_idx + 1 + 3 + idx*3, inner_idx + 1)).color = red_color
+            
+            if full_list[temp_idx + 3 + 1 + idx*3][inner_idx] > rel_max_diff:
+                wb_result.sheets[get_sheet_name(cur_pnt)].range((temp_idx + 1 + 3 + idx*3, inner_idx + 1)).color = red_color
+            
+            if full_list[temp_idx + 3 + 2 + idx*3][inner_idx] > red_max_diff:
+                wb_result.sheets[get_sheet_name(cur_pnt)].range((temp_idx + 1 + 3 + idx*3, inner_idx + 1)).color = red_color
+
+        temp_idx += 1
+    '''
+
+
+    abs_max_diff = 0.2
+    rel_max_diff = 0.1
+    red_max_diff = 0.1
+    max_err_list = [abs_max_diff,rel_max_diff,red_max_diff]
+    temp_idx = 0
+
+    for idx in range(3):
+        for idx_err in range(3):
+            elem_num = 0
+            t_full_list_idx = 3 + temp_idx + idx_err + idx*3
+            for elem_list in full_list[t_full_list_idx]:
+                if elem_num == 0:
+                    elem_num += 1
+                    continue
+
+                if (elem_list != "") and (elem_list > max_err_list[idx_err]):
+
+                    #t_elem_val = elem_list
+                    #t_max_err_val = max_err_list[idx_err]
+
+                    col_val = 2 + t_full_list_idx
+                    row_val = elem_num + 2
+                    wb_result.sheets[get_sheet_name(cur_pnt)].range((col_val, row_val)).color = red_color
+
+                    #t = 0
+
+                elem_num += 1
+        temp_idx += 2
+
+
+
+    
+
 #------------------------------------------------------
 #------------------------------------------------------   
 #------------------------------------------------------
@@ -253,7 +305,7 @@ def generate_report(st_pnt, end_pnt):
     # 4. copy results
     res_excel_file =  '.\\Results\\Report_' + time.strftime("%Y_%m_%d-%H-%M-%S",time.localtime()) + ".xlsx"
     
-    excel_app = xs.App(visible=False)  #uncomment if visible not desired
+    #excel_app = xs.App(visible=False)  #uncomment if visible not desired
   
     wb_template = xs.Book(template_file_name)
     wb_result = xs.Book()
@@ -272,7 +324,13 @@ def generate_report(st_pnt, end_pnt):
 
         copy_result_fr_template(wb_template, wb_result, cur_pnt)
 
+        
+
+        #запись всех измерений и расчетов погрешностей на страницу excel
         write_all_data_on_sheet(wb_result, cur_pnt)
+
+        #установка ширины столбца по содержимому ячейки
+        wb_result.sheets[get_sheet_name(cur_pnt)].range("A1:A18").columns.autofit() 
         '''
         write_etalon_result(wb_result, cur_pnt)
         write_mte_CNT_result(wb_result, cur_pnt) 
