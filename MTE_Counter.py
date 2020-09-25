@@ -448,7 +448,7 @@ class C_MTE_Counter(C_MTE_device):
         list_mean.append(mean_B)
         list_mean.append(mean_C)
 
-        print("mean_A, mean_B, mean_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2]))
+        #print("mean_A, mean_B, mean_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2]))
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#

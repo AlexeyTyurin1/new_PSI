@@ -11,6 +11,8 @@ import os
 import names_parameters as nm_par
 import measurement as ms
 
+from datetime import datetime
+
 prot = "http://"
 ip_addr = "192.168.99.235"
 
@@ -21,6 +23,8 @@ class RequestBinom():
         self.uid_names = dict()
         self.connect_session = False
         self.channel_open = False
+
+        self.blob_time = datetime.now()
         
     def connect(self):
         '''
@@ -59,9 +63,6 @@ class RequestBinom():
         example: obj.read_data(4, cnt=2, pause=5) - PSI 4 point makes 2 reading with delay 5s between readings
         and writes result to 4 point PSI
         '''
-
-        ####################################
-        ####################################
         ####################################
         #self.__open_svg_channel()
         ####################################
@@ -72,12 +73,9 @@ class RequestBinom():
         while cnt > 0:
             ####################################
             ####################################
-            ####################################
             ##time.sleep(pause)
             ####################################
             ####################################
-            ####################################
-
             '''
             print("Request current time")
             request = "~time"
@@ -85,12 +83,10 @@ class RequestBinom():
             cur_time = r.content.decode("utf-8")
             print("time: " + cur_time)
             '''
-
             #request = "~svgcurrent?name=db:PSI_data"
 
             request = "~svgevent?name=db:PSI_data"
 
-            
             r = self.session.get(self.__create_request(request))
             print("Status code: ", r.status_code)
             print("Read data len ", len(r.content))
@@ -145,13 +141,32 @@ class RequestBinom():
         
         self.channel_open = True
         print("Channel PSI_data sucessfully opened!")
-        
+
+
+
+    def get_blob_time(self):
+        return self.blob_time
+
+
     def __parse_output(self, content):
         '''
         parce answer with event from binom
         binom_answer - binary data received from binom
         uid_dict - UID: name dictionary
         '''
+
+        time_uid_offset = 8
+        # "q" == long long
+        nanosec_time = struct.unpack_from("q", content, time_uid_offset)[0]
+        microsec_time = nanosec_time / 1000
+        dt_time = datetime.fromtimestamp(microsec_time)
+
+        self.blob_time = dt_time
+
+        print(str(nanosec_time)+ "   nanosec_time")
+        print(str(microsec_time)+"   microsec_time")
+        print(str(dt_time)+      "   dt_time")
+
         offset_UID = 4
         offset_average_data = 64 + 8
         # global DBNames_value_mapping  ??? it's exactly need ???
@@ -167,7 +182,8 @@ class RequestBinom():
             offset_UID  += 128
             if offset_UID > len(content):
                 break
-        self.out_measurements()
+        
+        #self.out_measurements()
     
     def __update_result(self, num_psi_pnt):
         ms.measurement_storage.set_binom_measured_signal(num_psi_pnt, num_binom=0, **self.names_vals)

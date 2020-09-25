@@ -143,13 +143,14 @@ class PSIPointMesurement:
             #-Проверка на ноль! Номинал тока может быть равен нулю!!!!
             #---------------------------------#
             try:
-                if etalon_val.results[name] == 0.0:
-                    #mte_meas_res.errors[name] = delta_MTE
-                    #binom_meas_res.errors[name] = delta_Binom
-                    continue
-                mte_CNT_meas_res.errors_rel[name] = (delta_MTE_CNT / mte_CNT_meas_res.results[name]) * 100
-                mte_GEN_meas_res.errors_rel[name] = (delta_MTE_GEN / mte_CNT_meas_res.results[name]) * 100
-                binom_meas_res.errors_rel[name] = (delta_Binom / mte_CNT_meas_res.results[name]) * 100
+                if abs(etalon_val.results[name]) <= 0.00001:
+                    mte_GEN_meas_res.errors_rel[name] = 0.0
+                    binom_meas_res.errors_rel[name] = 0.0
+                    #continue
+                else:
+                    mte_CNT_meas_res.errors_rel[name] = (delta_MTE_CNT / mte_CNT_meas_res.results[name]) * 100
+                    mte_GEN_meas_res.errors_rel[name] = (delta_MTE_GEN / mte_CNT_meas_res.results[name]) * 100
+                    binom_meas_res.errors_rel[name] = (delta_Binom / mte_CNT_meas_res.results[name]) * 100
                 '''
                 mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / etalon_val.results[name]) * 100
                 mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / etalon_val.results[name]) * 100

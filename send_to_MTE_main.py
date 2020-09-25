@@ -22,8 +22,8 @@ import time
 #-----------------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------------#
 def main():
-    #debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
-    debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
+    debug_mode = True       # True == режим отладки - работает меню и обмен данными только с устройствами МТЕ
+    #debug_mode = False       # False == режим ПСИ - автоматический перебор точек, измерения и по МТЕ и по Биному
 
     log_time_file = open("Time_log.txt", "w")     # 'a'	открытие на дозапись, информация добавляется в конец файла.
     log_time_file.flush()
@@ -62,24 +62,7 @@ def init_main_MTE():
     ser_Counter     = serial.Serial("COM3", 19200, timeout=timeout_gen, parity=serial.PARITY_NONE, rtscts=0)
     #1.2 - Create objects MTE device
     #1.2.1 - MTE Counter
-
-
-    ###############################
-    ###############################
-    ###############################
-
-    write_str = "MODE1;DB1;T5;MAN;YI0\r"   # mode of send/get command by COM4 'Counter' port # режим токовых входов 12 А (по умолчанию стоит 120 А)
-
-    ###############################
-    ###############################
-    ###############################
-
-    #write_str = "MODE1;DB1;SU0;SP1,1;SP2,1;SP35,1;SP13,1;T0;MAN;YI0\r"   # mode of send/get command by COM4 'Counter' port # режим токовых входов 12 А (по умолчанию стоит 120 А)
-    
-    ###############################
-    ###############################
-    ###############################
-    
+    write_str = "MODE1;DB1;SU0;SP1,1;SP2,1;SP35,1;SP13,1;T0;MAN;YI0\r"   # mode of send/get command by COM4 'Counter' port # режим токовых входов 12 А (по умолчанию стоит 120 А)
     counter_MTE = MTE_Counter.C_MTE_Counter(ser_Counter, timeout_cnt, write_str, 0, 0)
     #1.2.2 - MTE Generator
     write_str = "MODE1;T1\r"   # mode of send/get command by COM1 'Generator' port
@@ -96,18 +79,15 @@ def init_main_MTE():
 #-----------------------------------------------------------------------------------#
 def do_PSI(log_time_file):
     
-    st_pnt = 10
-    end_pnt = 17
+    st_pnt = 75
+    end_pnt = 77
     if not check_pnts(st_pnt, end_pnt):
         return
-
     cur_pnt = st_pnt
     # Инициализация для получения данных с Бинома
     init_main_Binom()
     # Инициализация для управления МТЕ
-    #set_pnts_for_PSI, ser_Counter, ser_Generator, counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
     counter_MTE, generator_MTE, parameters_MTE = init_main_MTE()
-    
     #try:
     while cur_pnt <= end_pnt:
         print("\r\n"+"current PSI point is "+str(cur_pnt)+"\r\n")
@@ -124,58 +104,66 @@ def do_PSI(log_time_file):
                 #4 Read data from MTE Counter
 
                 ###################     Установить время измерения генератора равным 5 секундам
-                meas_time = 5.0 # [sec.]
+                meas_time = 5 # [sec.]
                 generator_MTE.ser_port.timeout = 0.2
                 generator_MTE.set_meas_time(meas_time)
 
+                
+                print(str(dt.datetime.now())+"  before open svg channel")
+                ##################
+                make_psi.binom_data.open_svg_channel()
+                ##################
+                print(str(dt.datetime.now())+"  after  open svg channel")
+
                 ###################
                 # ищем начало 5-ти секундного интервала
+                
+                py_second = dt.datetime.now().second
+                t_time = dt.datetime.now()
+                while py_second % 5 != 0:
+                    t_time = dt.datetime.now()
+                    py_second = t_time.second
+
+                print(str(dt.datetime.now())+"       choose 5 sec start")
+
+                counter_MTE.ser_port.timeout = 0.15
+
+                counter_MTE.start_auto_measure()    # Включить режим автовыдачи результатов     
+                ##################
+                #make_psi.binom_data.open_svg_channel()
+                ##################
+                readTime = meas_time
+                MTE_measured_Time = 1
+                counter_MTE.readByTimeT(readTime,MTE_measured_Time)
+
+                cur_mte_time = dt.datetime.now()
+                delta_time = cur_mte_time - t_time
+                print(str(cur_mte_time)+     "         cur_mte_time")
+                print(str(delta_time)+       "         delta_time")
+
+                # проверка на то, кончился ли 5 секундный интервал
+                '''
                 py_second = dt.datetime.now().second
                 while py_second % 5 != 0:
-                    py_second = dt.datetime.now().second
+                    t_time = dt.datetime.now()
+                    py_second = t_time.second
 
-                counter_MTE.ser_port.timeout = 0.1
+                print(str(t_time)+"       choose 5 sec start")
+                '''
 
+                # выключить режим автовыдачи результатов после окончания интеравала записи Т
+                counter_MTE.ser_port.timeout = 0.4
+                counter_MTE.stop_auto_measure()
+                # считать результаты измерений с Бинома
 
-                read_5_times_by_1_sec = False#False #True
-                read_1_times_by_5_sec = True#True #False
+                t_now = dt.datetime.now()
+                print(str(t_now)+     "         t_now before read Binom data")
 
-                if read_5_times_by_1_sec:
-                    counter_MTE.start_auto_measure()    # Включить режим автовыдачи результатов     
-                    ##################
-                    make_psi.binom_data.open_svg_channel()
-                    ##################
-                    readTime = 5
-                    MTE_measured_Time = 1
-                    counter_MTE.readByTimeT(readTime,MTE_measured_Time)
-                    # выключить режим автовыдачи результатов после окончания интеравала записи Т
-                    counter_MTE.stop_auto_measure()
-                    # считать результаты измерений с Бинома
-                    make_psi.binom_data.read_data(cur_pnt)
+                make_psi.binom_data.read_data(cur_pnt)
+                cur_blob_time = make_psi.binom_data.get_blob_time()
 
-                if read_1_times_by_5_sec:
-
-                    make_psi.binom_data.open_svg_channel()
-
-                    time.sleep(5)
-
-                    list_Cnt_ampl_full = []
-                    list_Cnt_angle_full = []
-                    freq_Cnt = 0.0
-                    freq_Cnt, list_Cnt_ampl_full, list_Cnt_angle_full = counter_MTE.get_meas_from_counter()
-                    flag = 2
-                    #'''
-                    for a_elem in zip(list_Cnt_ampl_full, list_Cnt_angle_full):
-                        print(str(a_elem[0])+" ")
-                        print(str(a_elem[1])+" ")
-                    print(str(freq_Cnt))
-                    #'''
-                    measurement.measurement_storage.set_mte_measured_signal(flag,cur_pnt,freq_Cnt,list_Cnt_ampl_full,list_Cnt_angle_full)
-
-                    # считать результаты измерений с Бинома
-                    make_psi.binom_data.read_data(cur_pnt)
-
-
+                t_now = dt.datetime.now()
+                print(str(t_now)+     "         t_now after  read Binom data")
 
                 ###################
                 # считать измерения с генератора МТЕ
@@ -184,7 +172,8 @@ def do_PSI(log_time_file):
                 freq_Gen = 0.0
                 freq_Gen, list_Gen_ampl_full, list_Gen_angle_full = generator_MTE.get_meas_from_generator()
                 flag = 1
-                #'''
+                '''
+                print("Generator MTE measurements")
                 for a_elem in zip(list_Gen_ampl_full, list_Gen_angle_full):
                     print(str(a_elem[0])+" ")
                     print(str(a_elem[1])+" ")
@@ -192,31 +181,30 @@ def do_PSI(log_time_file):
                 #'''
                 measurement.measurement_storage.set_mte_measured_signal(flag,cur_pnt,freq_Gen,list_Gen_ampl_full,list_Gen_angle_full)
                 
-                ###################
-                ###################
-                ###################
-                if read_5_times_by_1_sec:
-                    # получить усредненные данные 'короткой посылки' от счетчика МТЕ
-                    list_ampl_full = []
-                    list_angle_full = []
-                    freq_Cnt = 0.0
-                    freq_Cnt, list_ampl_full, list_angle_full  = counter_MTE.get_mean_values()
+                # получить усредненные данные 'короткой посылки' от счетчика МТЕ
+                list_ampl_full = []
+                list_angle_full = []
+                freq_Cnt = 0.0
+                freq_Cnt, list_ampl_full, list_angle_full  = counter_MTE.get_mean_values()
+                '''
+                print("Counter MTE measurements")
+                for a_elem in zip(list_ampl_full, list_angle_full):
+                    print(str(a_elem[0])+" ")
+                    print(str(a_elem[1])+" ")
+                print(str(freq_Cnt))
+                '''
 
-                    for a_elem in zip(list_ampl_full, list_angle_full):
-                        print(str(a_elem[0])+" ")
-                        print(str(a_elem[1])+" ")
-                    print(str(freq_Cnt))
-
-                    # по непонятным причинам, передача измерений через zip не работает, поэтому передаю по списочно
-                    flag = 2
-                    measurement.measurement_storage.set_mte_measured_signal(flag,cur_pnt,freq_Cnt,list_ampl_full,list_angle_full)
+                # по непонятным причинам, передача измерений через zip не работает, поэтому передаю по списочно
+                flag = 2
+                measurement.measurement_storage.set_mte_measured_signal(flag,cur_pnt,freq_Cnt,list_ampl_full,list_angle_full)
                 
 
-                ###################
-                ###################
-                ###################
+                #cur_mte_time
+                #cur_blob_time
 
-                cur_pnt += 1
+
+
+        cur_pnt += 1
 
     #формирование отчета о ПСИ
     report.generate_report(st_pnt, end_pnt)

@@ -287,7 +287,7 @@ class C_MTE_Generator(C_MTE_device):
             #3.6.1 - Если с первого раза точка не установилась, то попробовать еще раз
             if self.is_PSI_pnt_set == False:                            
                 counter_for_reset = 0
-                maxIter_reset_cmd = 10
+                maxIter_reset_cmd = 50
                 while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
                     #print("Trying to set PSI point again " + str(counter_for_reset+1))
                     self.SET_cmd()
@@ -296,7 +296,7 @@ class C_MTE_Generator(C_MTE_device):
         else:
             # сначала проверка по основной частоте с большой дельта
             counter_for_reset = 0
-            maxIter_reset_cmd = 10
+            maxIter_reset_cmd = 50
             is_PSI_pnt_set = False
             delta = 20 # [%]
             while((is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
@@ -400,7 +400,7 @@ class C_MTE_Generator(C_MTE_device):
         set_PSI_point_flag = [] # список флагов: пройдена ли проверка по этому параметру. 
         #Сигнал считается установленным когда по всем параметрам пройдена проверка. Наиболее часто не устанавливается сигнал тока фазы А
 
-        self.ser_port.timeout = 0.2     # интервал между опросами коротких команд
+        self.ser_port.timeout = 0.3     # интервал между опросами коротких команд
         ##########################
         #print("check_PSI_point Generator")
 

@@ -3,46 +3,34 @@ import time
 import measurement
 import names_parameters as nm_par
 
-#template_file_name = ".\\Template.xlsx"
-template_file_name = ".\\Template_with_gen_meas.xlsx"
+from math import (sqrt)
 
-# head_range = "A1:AJ1"
-# result_range = "A2:AJ13"
+#template_file_name = ".\\Template.xlsx"                # первая версия шаблона
+#template_file_name = ".\\Template_with_gen_meas.xlsx"  # шаблон с добавлением измерений генератора МТЕ
+template_file_name = ".\\Template_with_meter.xlsx"      # шаблон расчетом метрол запаса
 
-result_range = "A1:AJ18"
 
-cur_col_output = "A2"
+U_nom_range = "B1"
+I_nom_range = "D1"
 
-'''
-def copy_head_fr_template(wb_src, wb_dest):
-    src_sh = wb_src.sheets['Template']
-    dst_sh = wb_dest.sheets[0]
+U_nom_val = 57.735
+I_nom_val = 5
 
-    src_sh.range(head_range).api.copy
-    dst_sh.range("A1").api.select
-    dst_sh.api.paste
-
-def copy_result_field_fr_template(wb_src, wb_dest, cur_pnt):
-    src_sh = wb_src.sheets['Template']
-    dst_sh = wb_dest.sheets[0]
-
-    src_sh.range(result_range).api.copy
-    dst_sh.range(cur_col_output).api.select
-    dst_sh.api.paste
-'''
+result_range    = "A1:AM19"
+cur_col_output  = "A2"
 
 def copy_result_fr_template(wb_src, wb_dst, cur_pnt):
     src_sh = wb_src.sheets['Template']
     # wb_dst.sheets[sheet_name].activate()
     sheet_name = get_sheet_name(cur_pnt)
     dst_sh = wb_dst.sheets[sheet_name] 
+
     # make name from cur_pnt
     #dst_sh.sheets[current_sheet].name = get_sheet_name(cur_pnt)
     
     src_sh.range(result_range).api.copy
     dst_sh.range("A1").api.select
     dst_sh.api.paste
-
 
 def get_sheet_name(cur_pnt):
     return "pnt #{}".format(cur_pnt)
@@ -52,7 +40,6 @@ def next_output_cell(wb_result):
     cur_range = wb_result.sheets[0].range(cur_col_output).offset(12, 0)
     cur_col_output = cur_range.address.replace("$", "")
 
-    
 def __write_meas_result(wb_result, cur_pnt, meas_result, offset):
     '''
     template for write results to excel
@@ -87,7 +74,6 @@ def __write_meas_errors(wb_result, cur_pnt, meas_result, offset):
         cur_range.value = err
         cur_range = cur_range.offset(1, 0)
     """
-    
     
 def write_etalon_result(wb_result, cur_pnt):
     etalon = measurement.measurement_storage.get_etalon_signal(cur_pnt)
@@ -126,10 +112,31 @@ def remove_default_sheets(wb_result):
 #------------------------------------------------------
 def generate_value_for_write(etalon,mte_CNT,mte_GEN,binom_result,cur_pnt): 
 
+################
+#   ±0.01
+
+#   abs       -     abs
+#   rel, red  -     %
+
+#   freq            -   abs - 0.01
+#   Ua,b,c          -   red - 0.1
+#   Ia,b,c          -   red - 0.1
+#   AngUab,bc,ca    -   abs - 0.2
+#   AngIab,bc,ca    -   abs - 0.5
+
+#   cos,a,b,c       -   abs - 0.01
+#   U1,2,0          -   red - 0.1
+#   I1,2,0          -   red - 0.1
+#   P, Pa,b,c       -   rel - 0.2 + 0.025*abs((Iном / Ia,b,c) - 1) / abs(cos,a,b,c) + 0.04*abs((Uном / Ua,b,c) - 1)
+#   sin,a,b,c = sqrt( 1 - cos,a,b,c * cos,a,b,c )
+#   Q, Qa,b,c       -   rel - 0.5 + 0.025*abs((Iном / Ia,b,c) - 1) / abs(sin,a,b,c) + 0.04*abs((Uном / Ua,b,c) - 1)
+#   S, Sa,b,c       -   rel - 0.5 + 0.04*abs((Iном / Ia,b,c) - 1) + 0.04*abs((Uном / Ua,b,c) - 1)
+##############
+
     etalon_res          = list(etalon.meas_result.results.values())
 
     for idx in range(len(etalon_res)):
-        if etalon_res[idx] < 0.000001: # 10^(-6)
+        if abs(etalon_res[idx]) < 0.00001: # 10^(-5)
             etalon_res[idx] = 0.0
 
     mte_CNT_res         = list(mte_CNT.meas_result.results.values())
@@ -169,31 +176,48 @@ def generate_value_for_write(etalon,mte_CNT,mte_GEN,binom_result,cur_pnt):
     for L_idx in range(len(list_meas)):          # запись номера текущей точки ПСИ
         list_meas[L_idx].insert(0,cur_pnt)
     
-    empty_list = []                         # пустая строка
+    empty_list = []                              # пустая строка
     for _ in range(len(list_err_res[0])):
         empty_list.append("")
 
     etalon_res.insert(0,cur_pnt)
-    ####
+
+
+    ################################################
+    ################################################
+    #   переделать под новый шаблон
+    ################################################
+    ################################################
+
     full_list = []                          # список окончательных результатов для записи в excel за 1 заход
+    #full_list.append(title_split_str)
 
     full_list.append(etalon_res)
 
-    full_list.append(empty_list)
+    #full_list.append(empty_list)
+
+    #full_list.append(list_meas[0])
+    #full_list.append(list_err_res[0])
+    #full_list.append(list_err_res[1])
+    #full_list.append(list_err_res[2])
+
+    #full_list.append(empty_list)
 
     full_list.append(list_meas[0])
-    full_list.append(list_err_res[0])
-    full_list.append(list_err_res[1])
-    full_list.append(list_err_res[2])
-
-    full_list.append(empty_list)
 
     full_list.append(list_meas[1])
     full_list.append(list_err_res[3])
     full_list.append(list_err_res[4])
     full_list.append(list_err_res[5])
 
+    '''
     full_list.append(empty_list)
+    full_list.append(empty_list)
+    full_list.append(empty_list)
+    full_list.append(empty_list)
+    '''
+
+    #full_list.append(empty_list)
 
     full_list.append(list_meas[2])
     full_list.append(list_err_res[6])
@@ -201,6 +225,10 @@ def generate_value_for_write(etalon,mte_CNT,mte_GEN,binom_result,cur_pnt):
     full_list.append(list_err_res[8])
 
     return full_list
+
+    ################################################
+    ################################################
+    ################################################
 
 #------------------------------------------------------
 #----Запись содержимого страницы за 1 раз   
@@ -214,12 +242,16 @@ def write_all_data_on_sheet(wb_result,cur_pnt):
     full_list = []
     full_list = generate_value_for_write(etalon,mte_CNT,mte_GEN,binom_result,cur_pnt)
 
-    exel_range = "B2:AJ18" 
+    #exel_range = "A1:AM18" 
+    exel_range_1 = "E2:AM7" 
+    exel_range_2 = "E12:AM15"
     sheet_name = get_sheet_name(cur_pnt)
-    cur_range = wb_result.sheets[sheet_name].range(exel_range)
-    cur_range.value = full_list
+    cur_range = wb_result.sheets[sheet_name].range(exel_range_1)
+    cur_range.value = full_list[0:6]
+    cur_range = wb_result.sheets[sheet_name].range(exel_range_2)
+    cur_range.value = full_list[6:10]
 
-    make_color_sell_diff(wb_result,cur_pnt,full_list)
+    #make_color_sell_diff(wb_result,cur_pnt,full_list)
 
 #------------------------------------------------------
 #----Сделать цветовую градуировку ячеек  
@@ -237,29 +269,7 @@ def make_color_sell_diff(wb_result,cur_pnt,full_list):
     #   цикл по строке  (только строки с погрешностями)
     #       если значение из списка full_list > 'порогового значения'
     #           выделить эту ячейку красным цветом
-    '''
-    abs_max_diff = 0.005
-    rel_max_diff = 1
-    red_max_diff = 1
-
-    temp_idx = 0
-
-    for idx in range(3):
-        for inner_idx in range(len(full_list[0]) - 1):
-            
-            if full_list[temp_idx + 3 + idx*3][inner_idx] > abs_max_diff:
-                wb_result.sheets[get_sheet_name(cur_pnt)].range((temp_idx + 1 + 3 + idx*3, inner_idx + 1)).color = red_color
-            
-            if full_list[temp_idx + 3 + 1 + idx*3][inner_idx] > rel_max_diff:
-                wb_result.sheets[get_sheet_name(cur_pnt)].range((temp_idx + 1 + 3 + idx*3, inner_idx + 1)).color = red_color
-            
-            if full_list[temp_idx + 3 + 2 + idx*3][inner_idx] > red_max_diff:
-                wb_result.sheets[get_sheet_name(cur_pnt)].range((temp_idx + 1 + 3 + idx*3, inner_idx + 1)).color = red_color
-
-        temp_idx += 1
-    '''
-
-
+    #---------------------------------------
     abs_max_diff = 0.2
     rel_max_diff = 0.1
     red_max_diff = 0.1
@@ -271,31 +281,64 @@ def make_color_sell_diff(wb_result,cur_pnt,full_list):
             elem_num = 0
             t_full_list_idx = 3 + temp_idx + idx_err + idx*3
             for elem_list in full_list[t_full_list_idx]:
-                if elem_num == 0:
+                if elem_num == 0:   # пропустить первый элемент (столбец) строки: пустую ячейку или номер точки ПСИ
                     elem_num += 1
                     continue
-
                 if (elem_list != "") and (elem_list > max_err_list[idx_err]):
-
-                    #t_elem_val = elem_list
-                    #t_max_err_val = max_err_list[idx_err]
-
                     col_val = 2 + t_full_list_idx
                     row_val = elem_num + 2
                     wb_result.sheets[get_sheet_name(cur_pnt)].range((col_val, row_val)).color = red_color
 
-                    #t = 0
-
-                elem_num += 1
-        temp_idx += 2
-
-
-
-    
+                elem_num += 1   # перейти на следующую строку
+        temp_idx += 2           # пропустить пустую строку
 
 #------------------------------------------------------
 #------------------------------------------------------   
 #------------------------------------------------------
+
+# функция копирует строку с метрологическим запасом  со всех листов (об одиночной точке)
+# и созраняет на странице meter_result_by_pnt
+# Алгоритм работы:
+# выделить фрагмент со страницы с заполненным результатом (метрологического запаса)
+# скопировать на страницу результата в нужную строку
+# 
+def group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result):
+
+    cur_pnt = st_pnt
+    cnt_pnts = 0
+
+
+    dest_sheet_name = "meter_result"
+
+    from_ranges = "F19:AM19"
+
+    #--------- Копирование итогового шаблона в отчет о ПСИ
+    wb_result.sheets.add(dest_sheet_name, before=wb_result.sheets[cnt_pnts])
+
+    src_sh = wb_template.sheets['Template_meter_result']
+    dst_sh = wb_result.sheets[dest_sheet_name] 
+
+    res_meter_range = "A1:AM167"
+
+    src_sh.range(res_meter_range).api.copy
+    dst_sh.range("A1").api.select
+    dst_sh.api.paste
+    #--------- 
+
+    while cur_pnt <= end_pnt:
+        from_meter_range = wb_result.sheets[get_sheet_name(cur_pnt)].range(from_ranges)
+        dst_sh.range((10 - 1 + cur_pnt,3),(10 - 1 + cur_pnt,36)).value = from_meter_range.value
+
+        cur_pnt += 1
+
+
+
+
+#------------------------------------------------------
+#------------------------------------------------------   
+#------------------------------------------------------
+
+#title_split_str = []
 
 def generate_report(st_pnt, end_pnt):
     # 1. copy head from template
@@ -310,39 +353,37 @@ def generate_report(st_pnt, end_pnt):
     wb_template = xs.Book(template_file_name)
     wb_result = xs.Book()
     #copy_head_fr_template(wb_template, wb_result)
-
+    '''
+        #title_str = "Uном, В" + str(U_nom_val)	+	"Iном, А"		№ точки	freq	Ua	Ub	Uc	AngUab	AngUbc	AngUca	Ia	Ib	Ic	AngIab	AngIbc	AngIca	cosPhi_A	cosPhi_B	cosPhi_C	U1	U2	U0	I1	I2	I0	Pa	Pb	Pc	Qa	Qb	Qc	Sa	Sb	Sc	P	Q	S"
+    title_str = "Uном, В;Iном, А;№ точки;freq;Ua;Ub;Uc;AngUab;AngUbc;AngUca;Ia;Ib;Ic;AngIab;AngIbc;AngIca;" + 
+                "cosPhi_A;cosPhi_B;cosPhi_C;U1;U2;U0;I1;I2;I0;Pa;Pb;Pc;Qa;Qb;Qc;Sa;Sb;Sc;P;Q;S"
+    title_split_str = title_str.split(";")
+    title_split_str.insert(1,str(U_nom_val))
+    title_split_str.insert(3,str(I_nom_val))
+    '''
     #-------------------------------------------------
     cur_pnt = st_pnt
     cnt_pnts = 0
     while cur_pnt <= end_pnt:
         measurement.measurement_storage.calc_error(cur_pnt)
 
-        #copy_result_field_fr_template(wb_template, wb_result)
-
         wb_result.sheets.add(get_sheet_name(cur_pnt), before=wb_result.sheets[cnt_pnts])
-        # wb_result.sheets[sheet_name].activate()
 
         copy_result_fr_template(wb_template, wb_result, cur_pnt)
 
-        
-
-        #запись всех измерений и расчетов погрешностей на страницу excel
+        #запись всех измерений и расчетов погрешностей на страницу excel за 1 раз
         write_all_data_on_sheet(wb_result, cur_pnt)
 
         #установка ширины столбца по содержимому ячейки
-        wb_result.sheets[get_sheet_name(cur_pnt)].range("A1:A18").columns.autofit() 
-        '''
-        write_etalon_result(wb_result, cur_pnt)
-        write_mte_CNT_result(wb_result, cur_pnt) 
-        write_mte_GEN_result(wb_result, cur_pnt) 
-        write_binom_result(wb_result, cur_pnt)
-        '''
+        wb_result.sheets[get_sheet_name(cur_pnt)].range("A1:A19").columns.autofit() 
 
-        # next_output_cell(wb_result)
         cur_pnt += 1
         cnt_pnts += 1
-        
     #-------------------------------------------------
+
+
+    group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result)
+
     remove_default_sheets(wb_result)
 
     wb_result.sheets[0].activate()
