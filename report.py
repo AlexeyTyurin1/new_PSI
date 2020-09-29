@@ -302,7 +302,7 @@ def make_color_sell_diff(wb_result,cur_pnt,full_list):
 # выделить фрагмент со страницы с заполненным результатом (метрологического запаса)
 # скопировать на страницу результата в нужную строку
 # 
-def group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result):
+def group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result, list_of_times):
 
     cur_pnt = st_pnt
     cnt_pnts = 0
@@ -325,10 +325,32 @@ def group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result):
     dst_sh.api.paste
     #--------- 
 
-    while cur_pnt <= end_pnt:
-        from_meter_range = wb_result.sheets[get_sheet_name(cur_pnt)].range(from_ranges)
-        dst_sh.range((10 - 1 + cur_pnt,3),(10 - 1 + cur_pnt,36)).value = from_meter_range.value
+    start_col_to = 5
+    end_col_to   = start_col_to + 34
 
+    num_row_to = 10 - 1 + cur_pnt
+
+    ########################################
+    #list_of_times
+    #[0] - delta_mte_time
+    #[1] - end_automeas_mte_time
+    #[2] - BLOB-e Binom time
+    idx = 0
+    ########################################
+
+    while cur_pnt <= end_pnt:
+
+        #write times
+        dst_sh.range((num_row_to,2),(num_row_to,4)).value =[str(list_of_times[0][idx]), 
+                                                            str(list_of_times[1][idx]),
+                                                            str(list_of_times[2][idx])   ]                                 
+        idx += 1
+        ##
+
+        from_meter_range = wb_result.sheets[get_sheet_name(cur_pnt)].range(from_ranges)
+        dst_sh.range((num_row_to,start_col_to),(num_row_to,end_col_to)).value = from_meter_range.value
+
+        num_row_to += 1
         cur_pnt += 1
 
 
@@ -340,7 +362,7 @@ def group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result):
 
 #title_split_str = []
 
-def generate_report(st_pnt, end_pnt):
+def generate_report(st_pnt, end_pnt, list_of_times):
     # 1. copy head from template
     # 2. copy result from csv file and MTE counter
     
@@ -382,7 +404,8 @@ def generate_report(st_pnt, end_pnt):
     #-------------------------------------------------
 
 
-    group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result)
+    group_meter_ranges(st_pnt, end_pnt, wb_template, wb_result, list_of_times)
+    wb_result.sheets[0].range("B1:D200").columns.autofit() 
 
     remove_default_sheets(wb_result)
 

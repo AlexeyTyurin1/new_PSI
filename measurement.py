@@ -102,9 +102,12 @@ class PSIPointMesurement:
         '''
         calc errors on each measurement
         '''
-        main_freq_vec = measurement_storage.get_etalon_signal(1).get_main_freq_vector()
-        nominalU = main_freq_vec.get_ampl("Ua")
-        nominalI = main_freq_vec.get_ampl("Ia")
+        #main_freq_vec = measurement_storage.get_etalon_signal(1).get_main_freq_vector()
+        #nominalU = main_freq_vec.get_ampl("Ua")
+        #nominalI = main_freq_vec.get_ampl("Ia")
+
+        nominalU = 57.735
+        nominalI = 5.0
 
         #for name, err_type in names_par.link_measured_params_errors.items():
         for name, _ in names_par.link_measured_params_errors.items():
@@ -114,9 +117,9 @@ class PSIPointMesurement:
             binom_meas_res = self.Binom_signals
             
             #delta_MTE_CNT   =  abs(mte_CNT_meas_res.results[name] - etalon_val.results[name])
-            delta_MTE_CNT = 0
+            #delta_MTE_CNT   = 0
             delta_MTE_GEN   =  abs(mte_GEN_meas_res.results[name] - mte_CNT_meas_res.results[name])
-            delta_Binom =  abs(binom_meas_res.results[name] - mte_CNT_meas_res.results[name]) # use abs fund
+            delta_Binom     =  abs(binom_meas_res.results[name]   - mte_CNT_meas_res.results[name]) # use abs fund
             
             '''
             delta_MTE_CNT   =  abs(mte_CNT_meas_res.results[name] - etalon_val.results[name])
@@ -124,18 +127,14 @@ class PSIPointMesurement:
             delta_Binom =  abs(binom_meas_res.results[name] - etalon_val.results[name]) # use abs fund
             '''
             #################################
-            #################################
             '''
             border_min_value = 0.00001 # 10^(-5)
             if delta_MTE_CNT < border_min_value: delta_MTE_CNT = 0
             if delta_MTE_GEN < border_min_value: delta_MTE_GEN = 0
             if delta_Binom < border_min_value: delta_Binom = 0
             '''
-
             #################################
-            #################################
-
-            mte_CNT_meas_res.errors_abs[name] = delta_MTE_CNT
+            #mte_CNT_meas_res.errors_abs[name] = delta_MTE_CNT
             mte_GEN_meas_res.errors_abs[name] = delta_MTE_GEN
             binom_meas_res.errors_abs[name] = delta_Binom
 
@@ -148,9 +147,9 @@ class PSIPointMesurement:
                     binom_meas_res.errors_rel[name] = 0.0
                     #continue
                 else:
-                    mte_CNT_meas_res.errors_rel[name] = (delta_MTE_CNT / mte_CNT_meas_res.results[name]) * 100
+                    #mte_CNT_meas_res.errors_rel[name] = (delta_MTE_CNT / mte_CNT_meas_res.results[name]) * 100
                     mte_GEN_meas_res.errors_rel[name] = (delta_MTE_GEN / mte_CNT_meas_res.results[name]) * 100
-                    binom_meas_res.errors_rel[name] = (delta_Binom / mte_CNT_meas_res.results[name]) * 100
+                    binom_meas_res.errors_rel[name]   = (delta_Binom / mte_CNT_meas_res.results[name]) * 100
                 '''
                 mte_CNT_meas_res.errors[name] = (delta_MTE_CNT / etalon_val.results[name]) * 100
                 mte_GEN_meas_res.errors[name] = (delta_MTE_GEN / etalon_val.results[name]) * 100
@@ -168,16 +167,16 @@ class PSIPointMesurement:
                 elif name[0] == "I":
                     nom = nominalI
                 else:
-                    mte_CNT_meas_res.errors_red[name] = 0
+                    #mte_CNT_meas_res.errors_red[name] = 0
                     mte_GEN_meas_res.errors_red[name] = 0
                     binom_meas_res.errors_red[name] = 0
                     continue
 
-                mte_CNT_meas_res.errors_red[name] = (delta_MTE_CNT / nom ) * 100
+                #mte_CNT_meas_res.errors_red[name] = (delta_MTE_CNT / nom ) * 100
                 mte_GEN_meas_res.errors_red[name]   = (delta_MTE_GEN / nom ) * 100
                 binom_meas_res.errors_red[name]     = (delta_Binom / nom) * 100
             except ZeroDivisionError as er:
-                mte_CNT_meas_res.errors_red[name] = 9999999
+                #mte_CNT_meas_res.errors_red[name] = 9999999
                 mte_GEN_meas_res.errors_red[name] = 9999999
                 binom_meas_res.errors_red[name] = 9999999
 

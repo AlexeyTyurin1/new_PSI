@@ -266,7 +266,8 @@ class C_MTE_Counter(C_MTE_device):
     def readByTimeT(self,readTime,MTE_measured_Time):
         numElemInResultList = 0     # подсчет числа элементов в списке результатов
         realNumByte = 0
-        margin_percent = 7.5
+        #margin_percent = 7.5
+        margin_percent = 15.0
         NumByte_and_margin = 0
 
         for number in range(self.len_resultList_mas):                     # подсчет того, сколько элементов в списке выдачи результатов будет
@@ -277,6 +278,8 @@ class C_MTE_Counter(C_MTE_device):
                     realNumByte += 11
                 elif self.resultList_mas[number*self.num_elem_in_row + 2] == 11:  # angles U I 
                     realNumByte += 13
+                elif self.resultList_mas[number*self.num_elem_in_row + 2] == 13:  # freq
+                    realNumByte += 16.25 # 16.25 = 13 / 0.8
                 else:
                     realNumByte += 31
 
@@ -296,8 +299,9 @@ class C_MTE_Counter(C_MTE_device):
         self.ser_port.flushInput()
         self.ser_port.flushOutput()
 
-        self.ser_port.timeout = 0.3
-        prev_timeout = self.ser_port.timeout
+        #self.ser_port.timeout = 0.3
+        #prev_timeout = self.ser_port.timeout
+        prev_timeout = 0.3
 
         #print(" timeout "+str(readTime) + " symb_num " + str(symb_num))
         self.ser_port.timeout = readTime # [sec]
@@ -390,6 +394,7 @@ class C_MTE_Counter(C_MTE_device):
 
                     self.freq_mean = sum(self.prefix_mas[mas_prefix])/len(self.prefix_mas[mas_prefix])
                     #print(" freq:  mean: " + str(self.freq_mean) + "   numElem: " + str(len(self.prefix_mas[mas_prefix])))
+                    print("freq numElem: " + str(len(self.prefix_mas[mas_prefix])))
 
                 elif mas_prefix.startswith("El"):       # для абсолютных фазовых сдвигов
                     self.calc_mean_ABC_angle(   self.prefix_mas[mas_prefix][0:cur_List_len:6],\
@@ -447,6 +452,8 @@ class C_MTE_Counter(C_MTE_device):
         list_mean.append(mean_A)
         list_mean.append(mean_B)
         list_mean.append(mean_C)
+
+        print("num elems calc mean A/B/C: "+str(len(list_A)) + " "+str(len(list_B)) + " "+str(len(list_C)))
 
         #print("mean_A, mean_B, mean_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2]))
 
@@ -542,7 +549,7 @@ class C_MTE_Counter(C_MTE_device):
             else:
                 vA = float(mStr[1])     # переводим значение во float
         else:
-            print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+            #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
             vA = -1
         if len_mStr >2:
             if mStr[2].startswith("--") or (len(mStr[2]) <= 1): #: # фаза Б
@@ -550,7 +557,7 @@ class C_MTE_Counter(C_MTE_device):
             else:
                 vB = float(mStr[2])     # переводим значение во float
         else:
-            print("parse_MTE_answer_No_CR:  len_mStr < 2   mStr = " + str(mStr))
+            #print("parse_MTE_answer_No_CR:  len_mStr < 2   mStr = " + str(mStr))
             vB = -1
         if len_mStr >3:
             if (mStr[3].startswith("--")) or (len(mStr[3]) <= 1): #: # фаза C
@@ -558,7 +565,7 @@ class C_MTE_Counter(C_MTE_device):
             else:
                 vC = float(mStr[3])
         else:
-            print("parse_MTE_answer_No_CR:  len_mStr < 3   mStr = " + str(mStr))
+            #print("parse_MTE_answer_No_CR:  len_mStr < 3   mStr = " + str(mStr))
             vC = -1 
 
         return vA, vB, vC
@@ -577,7 +584,7 @@ class C_MTE_Counter(C_MTE_device):
                 if mStr[idx].startswith("--") or (len(mStr[idx]) <= 1): ang_list.append(9999.0)
                 else: ang_list.append(float(mStr[idx]))
             else:
-                print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+                #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
                 ang_list.append(9999.0)
 
         return ang_list
@@ -602,7 +609,7 @@ class C_MTE_Counter(C_MTE_device):
                 if mStr[idx].startswith("--") or (len(mStr[idx]) <= 1): ang_list.append(9999.0)
                 else: ang_list.append(float(mStr[idx]))
             else:
-                print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+                #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
                 ang_list.append(9999.0)
 
         return ang_list

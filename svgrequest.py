@@ -11,7 +11,7 @@ import os
 import names_parameters as nm_par
 import measurement as ms
 
-from datetime import datetime
+import datetime
 
 prot = "http://"
 ip_addr = "192.168.99.235"
@@ -24,7 +24,7 @@ class RequestBinom():
         self.connect_session = False
         self.channel_open = False
 
-        self.blob_time = datetime.now()
+        self.blob_time = datetime.datetime.now()
         
     def connect(self):
         '''
@@ -50,7 +50,7 @@ class RequestBinom():
     def close_channel(self):
         if self.channel_open:
             #self.__close_channel()
-            self.__close_svg_channel()
+            self.close_svg_channel()
             self.channel_open = False
 
     #def read_data(self, num_psi_pnt, cnt=1, pause=5 ):
@@ -85,7 +85,23 @@ class RequestBinom():
             '''
             #request = "~svgcurrent?name=db:PSI_data"
 
-            request = "~svgevent?name=db:PSI_data"
+            #request = "~svgevent?name=db:PSI_data"
+
+            """
+            ~svgevent?name=[имя данных]
+            Запрос новых данных. Используется только для чтения данных из канала вывода.
+            По данному запросу будут переданы все события из канала вывода БД, произошедшие после последнего вызова запроса «~svgdata» или «~svgevent».
+            """
+
+            request = "~svgcurrent?name=db:PSI_data"
+            """
+            
+
+            ~svgcurrent?name=[имя данных] [& shortvalue=«1»]
+            Запрос текущих значений. Используется только для чтения данных из канала вывода.
+            По данному запросу будут переданы текущие данные (аналогично «~svgdata»).
+            При выводе значений из БД обрабатывается параметр «shortvalue». При его наличии данные будут выданы максимально упакованные – в 10 байт. Первые два байта – качество, 8 байт int или float значение. При передаче с максимальной упаковкой в заголовке ответа будет указан параметр «shortvalue» со значением «1».
+            """
 
             r = self.session.get(self.__create_request(request))
             print("Status code: ", r.status_code)
@@ -93,10 +109,11 @@ class RequestBinom():
             self.__parse_output(r.content)
             cnt -= 1
         self.__update_result(num_psi_pnt)
-        self.__close_svg_channel()
+        #self.__close_svg_channel()
 
     
-    def __close_svg_channel(self):
+    #def __close_svg_channel(self):
+    def close_svg_channel(self):
         if self.channel_open == True:
             request = "~svgclose?name=db:PSI_data"
             if hasattr(self, "session"):
@@ -134,8 +151,14 @@ class RequestBinom():
 
     ##def __open_svg_channel(self):
     def open_svg_channel(self):
+
+        self.close_channel()
+
         request = "~svgdata?name=db:PSI_data"
         r = self.session.get(self.__create_request(request))
+
+        #time.sleep(0.5)
+
         if r.status_code != 200:
             raise Exception("Can't open channel db:PSI_data")
         
@@ -158,14 +181,27 @@ class RequestBinom():
         time_uid_offset = 8
         # "q" == long long
         nanosec_time = struct.unpack_from("q", content, time_uid_offset)[0]
-        microsec_time = nanosec_time / 1000
-        dt_time = datetime.fromtimestamp(microsec_time)
+        microsec_time = int(nanosec_time / 1000)
+
+        mod_microsec = int(microsec_time % (1000000))
+
+        part_of_sec = mod_microsec / 1000000.0
+
+        sec_time = int(microsec_time / 1000000)
+        dt_time = datetime.datetime.fromtimestamp(sec_time)
+
+
+        dt_time = dt_time + datetime.timedelta(microseconds=mod_microsec)
+
 
         self.blob_time = dt_time
 
-        print(str(nanosec_time)+ "   nanosec_time")
-        print(str(microsec_time)+"   microsec_time")
+        #print(str(nanosec_time)+ "   nanosec_time")
+        #print(str(microsec_time)+"   microsec_time")
         print(str(dt_time)+      "   dt_time")
+
+        #print(str(mod_microsec)+ "   mod_microsec")
+        #print(str(part_of_sec)+  "   part_of_sec")
 
         offset_UID = 4
         offset_average_data = 64 + 8
