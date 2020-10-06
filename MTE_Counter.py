@@ -29,21 +29,34 @@ set_ranges_for_CNT()	        --установить диапазоны изме�
 get_current_FREQ()	            --запросить текущую частоту сигнала
 start_auto_measure()	        --начать автопередачу данных
 stop_auto_measure()	            --остановить автопередачу данных
+SetTimeMenuHandler(self)	    --Обработчик времени измерения счетчика
+parse_MTE_answer_Time(self)	    --Парсинг строки-времени измерения от счетчика
 
+get_MTE_current_Time(self)	    --Запросить текущее время с устройства МТЕ
 get_all_spectrum()              --Запросить, считать и распарсить все спектры со счетчика МТЕ
+get_meas_from_counter()	        --Получить измерения со счетчика МТЕ. Считывание 1 раз, сохранение в списки, аналогично генератору
 
---Вспомогательные функции
+--Основные функции для ПСИ
 
-send_to_MTE(write_str)		            --переопределение метода "передать команду устройству МТЕ"
-readByTimeT(readTime,MTE_measured_Time) --считать в буфер данные за время Т
-parse_accumulateResult_answer(text)	    --распарсить принятые функцией readByTimeT значения
+send_to_MTE(write_str)		                    --переопределение метода "передать команду устройству МТЕ"
+readByTimeT(readTime,MTE_measured_Time)         --считать в буфер данные за время Т
+parse_accumulateResult_answer(text)	            --распарсить принятые функцией readByTimeT значения
 calc_mean_ABC(list_A,list_B,list_C,list_mean,text_file) --расчитать средние значения списков значений и сохранить результаты в список
-parse_MTE_answer_No_CR(text)	        --распарсить ответ счетчика МТЕ из значений по 3-м фазам без символа возврата каретки
-parse_MTE_answer_Freq_No_CR(text)       --распарсить ответ счетчика МТЕ значения частоты без символа возврата каретки
-parse_MTE_answer_Time()	                --распарсить строку-ответ от МТЕ "текущее" время измерения
-get_spectrum_from_counter(numUI,numPhase)-- запрос и считывание буфера спектра со счетчика МТЕ 
-get_UI_max_range()	                -- узнать текущий диапазон измерения. Необходимо для расчета спектра
-parse_MTE_Harm_answer(text)	        --парсинг буфера со значениями спектра, полученные со счетчика МТЕ
+calc_mean_ABC_angle(self,list_U_A, list_U_B, list_U_C,list_I_A, list_I_B, list_I_C, list_mean,text_file) - Вычисление мат ожидания по углам фазовых сдвигов для 3-х списков
+parse_MTE_answer_No_CR(text)	                --распарсить ответ счетчика МТЕ из значений по 3-м фазам без символа возврата каретки
+parse_MTE_answer_ANGLES_No_CR(self,text_data)	--Парсинг строки ответа по углам фазовых сдвигов без возврата каретки
+parse_MTE_answer_ANGLES(self,text_data)         --Парсинг строки ответа по углам фазовых сдвигов
+parse_MTE_answer_Freq_No_CR(self, text_data)	--Парсинг строки ответ "частота" без символа возврата каретки
+parse_MTE_answer_Time()	                        --распарсить строку-ответ от МТЕ "текущее" время измерения
+get_spectrum_from_counter(numUI,numPhase)       -- запрос и считывание буфера спектра со счетчика МТЕ 
+get_UI_max_range()	                            -- узнать текущий диапазон измерения. Необходимо для расчета спектра
+parse_MTE_Harm_answer(text)	                    --парсинг буфера со значениями спектра, полученные со счетчика МТЕ
+
+check_PSI_pnt(self,sig, parameters_MTE, log_time_file)	--Проверка установки точки ПСИ по счетчику МТЕ
+check_PSI_point_harms(self,sig)			        --Проверка установки сигнала по гармоникам для счетчика
+check_harms(self,sig)				            --Проверка установки сигнала по гармоникам для счетчика
+
+set_MTE_current_Time(self)	--Установить на счетчике МТЕ текущее время (время компьютера)
 '''
 
 class C_MTE_Counter(C_MTE_device):
@@ -301,7 +314,7 @@ class C_MTE_Counter(C_MTE_device):
 
         #self.ser_port.timeout = 0.3
         #prev_timeout = self.ser_port.timeout
-        prev_timeout = 0.3
+        prev_timeout = 0.2
 
         #print(" timeout "+str(readTime) + " symb_num " + str(symb_num))
         self.ser_port.timeout = readTime # [sec]
@@ -394,7 +407,7 @@ class C_MTE_Counter(C_MTE_device):
 
                     self.freq_mean = sum(self.prefix_mas[mas_prefix])/len(self.prefix_mas[mas_prefix])
                     #print(" freq:  mean: " + str(self.freq_mean) + "   numElem: " + str(len(self.prefix_mas[mas_prefix])))
-                    print("freq numElem: " + str(len(self.prefix_mas[mas_prefix])))
+                    #print("freq numElem: " + str(len(self.prefix_mas[mas_prefix])))
 
                 elif mas_prefix.startswith("El"):       # для абсолютных фазовых сдвигов
                     self.calc_mean_ABC_angle(   self.prefix_mas[mas_prefix][0:cur_List_len:6],\
@@ -453,8 +466,7 @@ class C_MTE_Counter(C_MTE_device):
         list_mean.append(mean_B)
         list_mean.append(mean_C)
 
-        print("num elems calc mean A/B/C: "+str(len(list_A)) + " "+str(len(list_B)) + " "+str(len(list_C)))
-
+        #print("num elems calc mean A/B/C: "+str(len(list_A)) + " "+str(len(list_B)) + " "+str(len(list_C)))
         #print("mean_A, mean_B, mean_C: " + str(list_mean[0]) + "  "+str(list_mean[1]) + "  "+str(list_mean[2]))
 
     #-----------------------------------------------------------------------------------#
@@ -540,39 +552,49 @@ class C_MTE_Counter(C_MTE_device):
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def parse_MTE_answer_No_CR(self,text_data):              # парсить ответ от МТЕ по общим параметрам: 3 числа по 3 фазам
-        
-        mStr = text_data.split(",")               # Делим строку результата на блоки.
-        len_mStr = len(mStr)
-        if len_mStr >1:
-            if mStr[1].startswith("--") or (len(mStr[1]) <= 1): #: # фаза А
-                vA = 0                  # Нет значения в результатах измерений 
+        try:
+            mStr = text_data.split(",")               # Делим строку результата на блоки.
+            len_mStr = len(mStr)
+            if len_mStr >1:
+                if mStr[1].startswith("--") or (len(mStr[1]) <= 1): #: # фаза А
+                    vA = 0                  # Нет значения в результатах измерений 
+                else:
+                    vA = float(mStr[1])     # переводим значение во float
             else:
-                vA = float(mStr[1])     # переводим значение во float
-        else:
-            #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
-            vA = -1
-        if len_mStr >2:
-            if mStr[2].startswith("--") or (len(mStr[2]) <= 1): #: # фаза Б
-                vB = 0                  # Нет значения в результатах измерений 
-            else:
-                vB = float(mStr[2])     # переводим значение во float
-        else:
-            #print("parse_MTE_answer_No_CR:  len_mStr < 2   mStr = " + str(mStr))
-            vB = -1
-        if len_mStr >3:
-            if (mStr[3].startswith("--")) or (len(mStr[3]) <= 1): #: # фаза C
-                vC = 0                  # Нет значения в результатах измерений 
-            else:
-                vC = float(mStr[3])
-        else:
-            #print("parse_MTE_answer_No_CR:  len_mStr < 3   mStr = " + str(mStr))
-            vC = -1 
+                #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+                vA = -1
 
-        return vA, vB, vC
+            if len_mStr >2:
+                if mStr[2].startswith("--") or (len(mStr[2]) <= 1): #: # фаза Б
+                    vB = 0                  # Нет значения в результатах измерений 
+                else:
+                    vB = float(mStr[2])     # переводим значение во float
+            else:
+                #print("parse_MTE_answer_No_CR:  len_mStr < 2   mStr = " + str(mStr))
+                vB = -1
+
+            if len_mStr >3:
+                if (mStr[3].startswith("--")) or (len(mStr[3]) <= 1): #: # фаза C
+                    vC = 0                  # Нет значения в результатах измерений 
+                else:
+                    vC = float(mStr[3])
+            else:
+                #print("parse_MTE_answer_No_CR:  len_mStr < 3   mStr = " + str(mStr))
+                vC = -1 
+        except Exception:
+            print('parse_MTE_answer_No_CR CNT Error')
+            vA = -1
+            vB = -1
+            vC = -1
+        else:
+            #print('Всё хорошо.')
+            pass
+        finally:
+            return vA, vB, vC
 
         #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    #-----Парсинг строки ответ 
+    #-----Парсинг строки ответа по углам фазовых сдвигов без возврата каретки
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def parse_MTE_answer_ANGLES_No_CR(self,text_data): 
@@ -582,7 +604,11 @@ class C_MTE_Counter(C_MTE_device):
         for idx in range(1,7):
             if len_mStr > idx:
                 if mStr[idx].startswith("--") or (len(mStr[idx]) <= 1): ang_list.append(9999.0)
-                else: ang_list.append(float(mStr[idx]))
+                else: 
+                    try:
+                        ang_list.append(float(mStr[idx]))
+                    except Exception:
+                        ang_list.append(9999.0)
             else:
                 #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
                 ang_list.append(9999.0)
@@ -591,7 +617,7 @@ class C_MTE_Counter(C_MTE_device):
     
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    #-----Парсинг строки ответ 
+    #-----Парсинг строки ответа по углам фазовых сдвигов
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def parse_MTE_answer_ANGLES(self,text_data): 
@@ -602,12 +628,20 @@ class C_MTE_Counter(C_MTE_device):
             if idx == 6:
                 t_str = mStr[idx].split("\r")
                 if len(t_str) >= 0:
-                    ang_list.append(float(t_str[0]))
+                    try:
+                        ang_list.append(float(t_str[0]))
+                    except Exception:
+                        ang_list.append(9999.0)
                     continue
 
             if len_mStr > idx:
                 if mStr[idx].startswith("--") or (len(mStr[idx]) <= 1): ang_list.append(9999.0)
-                else: ang_list.append(float(mStr[idx]))
+                else: 
+                    try:
+                        ang_list.append(float(mStr[idx]))
+                    except Exception:
+                        ang_list.append(9999.0)
+                    continue
             else:
                 #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
                 ang_list.append(9999.0)
@@ -627,9 +661,14 @@ class C_MTE_Counter(C_MTE_device):
                 vFreq = 0                  # Нет значения в результатах измерений 
             else:
                 lastVal = mStr[1]       
-                vFreq = float(lastVal)     # переводим значение во float
+                
+                try:
+                    vFreq = float(lastVal)     # переводим значение во float
+                except Exception:
+                    vFreq = -1
+                #continue
         else:
-            print("parse_MTE_answer_Freq_No_CR:  len(mStr) != 2   len(mStr) = "+str(len(mStr)))
+            #print("parse_MTE_answer_Freq_No_CR:  len(mStr) != 2   len(mStr) = "+str(len(mStr)))
             vFreq = -1 
 
         return vFreq  
@@ -720,7 +759,7 @@ class C_MTE_Counter(C_MTE_device):
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def set_ext_sync_mode(self):
-        self.set_measure_time(0.0)
+        self.set_measure_time(0)
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
@@ -991,7 +1030,12 @@ class C_MTE_Counter(C_MTE_device):
                 vFreq = 0                  # Нет значения в результатах измерений 
             else:
                 lastVal = mStr[1]       # Убираем в конце символ <CR>
-                vFreq = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
+                
+                try:
+                    vFreq = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
+                except Exception:
+                    vFreq = -1
+                #continue
         else:
             print("parse_MTE_answer_Freq_No_CR:  len(mStr) != 2   len(mStr) = "+str(len(mStr)))
             vFreq = -1 
@@ -1012,7 +1056,7 @@ class C_MTE_Counter(C_MTE_device):
             #! print("Waiting for measured: " + get_common_params_Counter.GetCommonMenuItems_mas[(numUI-1)*3]) 
             write_str = "?" + str(self.GetCommonMenuItems_mas[(self.numUI-1)*3+2])+ "\r"
         else:
-            print("Error UI num in parse MTE harms")
+            #print("Error UI num in parse MTE harms")
             return
         
         self.send_cmd_to_device(write_str)
@@ -1046,12 +1090,13 @@ class C_MTE_Counter(C_MTE_device):
                     UI_cur_max_range = U_max_ranges_mas[idx]
                     break
         else:
-            print("Error UI num in parse MTE harms")
+            #print("Error UI num in parse MTE harms")
             return -1
 
         if UI_cur_max_range == 0:
-            print("Error UI_cur_max_range (MTE harms)  UI_cur_max_range == " + str(UI_cur_max_range) + " \r\n Main harmonics amplitude is zero") 
-        print("UI_cur_max_range: " + str(UI_cur_max_range))
+            pass
+            #print("Error UI_cur_max_range (MTE harms)  UI_cur_max_range == " + str(UI_cur_max_range) + " \r\n Main harmonics amplitude is zero") 
+        #print("UI_cur_max_range: " + str(UI_cur_max_range))
 
         return UI_cur_max_range
 
@@ -1067,7 +1112,7 @@ class C_MTE_Counter(C_MTE_device):
         
         # распарсить значения -> сгруппировать Ре и Им части в массивы -> расчет окончательного результата
 
-        print("\r\nparse_MTE_Harm_answer self.textFromMTE" + str(harm_text)+"\r\n")
+        #print("\r\nparse_MTE_Harm_answer self.textFromMTE" + str(harm_text)+"\r\n")
 
         textFromMTE_common = harm_text.split(",")
         #flafNewVal = textFromMTE_common[0][-1]      # доступны ли новые данные для считывания
@@ -1092,7 +1137,7 @@ class C_MTE_Counter(C_MTE_device):
         ### End распарсить значения -> сгруппировать Ре и Им части в массивы ->
 
         # шапка таблицы результатов измерения гармоник
-        print('{0:^4s} {1:^14s} {2:^14s}'.format("harm №", "Abs","Ang, [°]"))
+        #print('{0:^4s} {1:^14s} {2:^14s}'.format("harm №", "Abs","Ang, [°]"))
 
         self.list_m[num_list_m].clear()
         self.list_a[num_list_m].clear()
@@ -1108,7 +1153,7 @@ class C_MTE_Counter(C_MTE_device):
             #list_angle.append( radToDeg_coef * math.atan2(list_im[idx], list_re[idx])) 
             self.list_a[num_list_m].append( radToDeg_coef * atan(list_im[idx]/list_re[idx])) 
 
-            print('{0:4d} {1:14f} {2:14f}'.format(idx, self.list_m[num_list_m][idx], self.list_a[num_list_m][idx]))
+            #print('{0:4d} {1:14f} {2:14f}'.format(idx, self.list_m[num_list_m][idx], self.list_a[num_list_m][idx]))
 
         #! Вызовы функции Дмитрия: "получить значения спектра:  1) амплитуд гармоник [list_module] (0..31) \
         #                                                       2) фаз гармоник      [list_angle]  (0..31) \ 
@@ -1121,7 +1166,14 @@ class C_MTE_Counter(C_MTE_device):
     #-----Проверка установки точки ПСИ по счетчику МТЕ
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    def check_PSI_pnt(self,sig, exist_harms_flag, log_time_file): 
+    def check_PSI_pnt(self,sig, parameters_MTE, log_time_file): 
+
+        exist_harms_flag = parameters_MTE.get_exist_harms_flag
+
+        self.set_ranges_for_CNT(parameters_MTE.get_ranges_CNT())
+        
+
+        
         if exist_harms_flag == True:
             return self.check_PSI_point_harms(sig)
 
@@ -1148,9 +1200,9 @@ class C_MTE_Counter(C_MTE_device):
             etalon_vals.append(t_phase)
 
         ##########################
-        N_total_iter = 5    #  Сколько раз повторно спрашиваем измерения с генератора МТЕ
-        delta = 2           # [%]
-        margin_angle = 2    # [град.]
+        N_total_iter = 10    #  Сколько раз повторно спрашиваем измерения с генератора МТЕ
+        delta = 4           # [%]
+        margin_angle = 4    # [град.]
         set_PSI_point_flag = [] # список флагов: пройдена ли проверка по этому параметру. 
         #Сигнал считается установленным когда по всем параметрам пройдена проверка. Наиболее часто не устанавливается сигнал тока фазы А
 
@@ -1180,8 +1232,10 @@ class C_MTE_Counter(C_MTE_device):
                 
                 meas_vals = []# обнуление списков после каждой итерации опроса
                 
-                if ask_idx < 2:   
-                    #print("textFromMTE"+textFromMTE)                  # Обработка ответов на запрос 1-ампл. тока, 2-ампл. напряжения
+                if ask_idx < 2: 
+
+                    if check_gen_iter > 7:
+                        print("textFromMTE"+textFromMTE)                  # Обработка ответов на запрос 1-ампл. тока, 2-ампл. напряжения
                     meas_vals.extend(self.parse_MTE_answer_text(textFromMTE))
                     #for m_vals in meas_vals: print(m_vals)
 
@@ -1193,13 +1247,15 @@ class C_MTE_Counter(C_MTE_device):
                         else: cur_delta = 0
                     
                         if cur_delta > delta:
-                            #print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + \
-                            #    str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                            if check_gen_iter > 7:
+                                print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + \
+                                    str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                             set_PSI_point_flag.append(False)
                         else: set_PSI_point_flag.append(True)
 
                 elif ask_idx == 2 or ask_idx == 3:  # 2 - phase_UU,  3 - phase_UI
-                    #print("textFromMTE"+textFromMTE)
+                    if check_gen_iter > 7:
+                        print("textFromMTE"+textFromMTE)
                     meas_vals.extend(self.parse_MTE_answer_text(textFromMTE))
 
                     for t_idx in range(3):
@@ -1238,23 +1294,27 @@ class C_MTE_Counter(C_MTE_device):
                         else: cur_delta = 0
 
                         if cur_delta > delta:
-                            #print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                            if check_gen_iter > 7:
+                                print("Error on phase "+str(t_idx)+": measured value: " + str(meas_vals[t_idx])+" etalon value: " + str(etalon_vals[phase_idx]) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                             set_PSI_point_flag.append(False)
                         else: 
                             set_PSI_point_flag.append(True)
 
-                    #print("meas_vals: "+str(meas_vals[0])+" "+str(meas_vals[1])+" "+str(meas_vals[2])+" ")
-                    #print("etal_vals: "+str(etalon_vals[ask_idx*3])+" "+str(etalon_vals[ask_idx*3+1])+" "+str(etalon_vals[ask_idx*3+2])+" ")
+                    if check_gen_iter > 7:
+                        print("meas_vals: "+str(meas_vals[0])+" "+str(meas_vals[1])+" "+str(meas_vals[2])+" ")
+                        print("etal_vals: "+str(etalon_vals[ask_idx*3])+" "+str(etalon_vals[ask_idx*3+1])+" "+str(etalon_vals[ask_idx*3+2])+" ")
 
                     #for m_vals in meas_vals: print(m_vals)
 
                 else:
                     measfreq = self.parse_MTE_answer_Freq(textFromMTE)
-                    #print("vfreq: "+str(measfreq))
+                    if check_gen_iter > 7:
+                        print("vfreq: "+str(measfreq))
                     if etalon_vals[phase_idx] != 0.0: cur_delta = abs((etalon_freq - measfreq)/etalon_freq) * 100.0
                     else: cur_delta = 0
                     if cur_delta > delta:
-                        #print("Error in Frequency measured value: " + str(measfreq)+" etalon value: " + str(etalon_freq) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                        if check_gen_iter > 7:
+                            print("Error in Frequency measured value: " + str(measfreq)+" etalon value: " + str(etalon_freq) +" calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                         set_PSI_point_flag.append(False)
                     else: set_PSI_point_flag.append(True)
                         
@@ -1272,8 +1332,10 @@ class C_MTE_Counter(C_MTE_device):
             if check_set_PSI == True:
                 break
             
-            self.ser_port.timeout = 0.3
+            self.ser_port.timeout = 0.2
             self.ser_port.write("".encode())        # перерыв между опросами в одной итерации равный 1 секунде
+            self.ser_port.timeout = 0.8
+            self.set_ranges_for_CNT(parameters_MTE.get_ranges_CNT())
             self.ser_port.timeout = 0.2
 
         #print("finally Counter: check_set_PSI == "+str(check_set_PSI))
@@ -1311,7 +1373,7 @@ class C_MTE_Counter(C_MTE_device):
     #-----------------------------------------------------------------------------------#
     def check_PSI_point_harms(self,sig):
         counter_for_reset = 0
-        maxIter_reset_cmd = 2
+        maxIter_reset_cmd = 5
 
         is_PSI_pnt_set = False
 
@@ -1340,6 +1402,7 @@ class C_MTE_Counter(C_MTE_device):
         
         self.get_all_spectrum()
 
+        '''
         print("self.list_Ua_ang, "+str(len(self.list_Ua_ang))+"\r\n"+\
                 " self.list_Ub_ang, "+str(len(self.list_Ub_ang))+"\r\n"+\
                 " self.list_Uc_ang, "+str(len(self.list_Uc_ang))+"\r\n"+\
@@ -1353,6 +1416,7 @@ class C_MTE_Counter(C_MTE_device):
                 " self.list_Ia_mod, "+str(len(self.list_Ia_mod))+"\r\n"+\
                 " self.list_Ib_mod, "+str(len(self.list_Ib_mod))+"\r\n"+\
                 " self.list_Ic_mod, "+str(len(self.list_Ic_mod))+"\r\n" )
+        '''
 
         #print("list_magn " + str(len(list_magn)))
         #print("list_angl " + str(len(list_angl)))
@@ -1372,7 +1436,6 @@ class C_MTE_Counter(C_MTE_device):
 
             for idx_phase in range(6):              # цикл по содержимому векторов
 
-                
                 etalon_ampl = cur_harm_signal.get(keys_vect_dict[idx_phase])[0] 
                 measered_ampl = self.list_m[idx_phase][idx_harm_num]
 
@@ -1391,9 +1454,9 @@ class C_MTE_Counter(C_MTE_device):
 
                 
                 if cur_delta > delta:
-                    print("Error on phase "+str(idx_phase)+" harm num: "+str(idx_harm_num)+\
-                          ": measered_ampl: " + str(measered_ampl)+" etalon_ampl: " + str(etalon_ampl) +\
-                                " calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                    #print("Error on phase "+str(idx_phase)+" harm num: "+str(idx_harm_num)+\
+                    #      ": measered_ampl: " + str(measered_ampl)+" etalon_ampl: " + str(etalon_ampl) +\
+                    #            " calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                     set_PSI_point_flag = False
                 #else:   set_PSI_point_flag = True
 
@@ -1418,7 +1481,7 @@ class C_MTE_Counter(C_MTE_device):
                 else:   set_PSI_point_flag = True
                 """
 
-        print("finally set_PSI_point_flag HARMS: "+str(set_PSI_point_flag))
+        #print("finally set_PSI_point_flag HARMS: "+str(set_PSI_point_flag))
         return set_PSI_point_flag
 
 

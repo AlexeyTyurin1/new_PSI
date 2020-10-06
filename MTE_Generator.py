@@ -25,8 +25,14 @@ OFF_signal		        --выключить сигнал на выходе гене
 SET_cmd			        --включить сигнал и применить установленные значения
 get_current_PSI_pnt_num --получить текущей номер точки ПСИ
 set_meas_time		    --установить время измерения генератора (минимальное время 1 секунда)
+get_spectrum_result(self)	--Получить измерения спектра (генератор)
+
+
 set_PSI_point		    --установить точку ПСИ
 
+get_meas_from_generator(self)	--Получить измерения с генератора МТЕ. Считывание 1 раз, сохранение в списки, аналогично счетчику
+check_PSI_point_main_freq(self,sig, log_time_file, delta)--Обработчик 'проверки по генератору' по основной частоте	
+check_PSI_point_harms(self,sig)	--Обработчик 'проверки по генератору' по гармоникам
 
 ---Вспомогательные функции
 
@@ -225,7 +231,7 @@ class C_MTE_Generator(C_MTE_device):
     def set_PSI_point(self, sig, parameters_MTE, log_time_file):
 
         #1 - увеличиваем время между командами, для обработки генератором "длинных последовательностей команд"
-        self.ser_port.timeout = 0.75 # [sec.]
+        self.ser_port.timeout = 0.7 # [sec.]
         #2 - выключение сигнала на выходе генератора
         self.OFF_signal()
 
@@ -280,15 +286,15 @@ class C_MTE_Generator(C_MTE_device):
         #
 
         #3.6 - "Проверка по генератору" по сигналу основной частоты
-        if (self.flag_exist_cur_harm != True) or (self.flag_exist_vol_harm != True):    # Если нет гармоник проверка только по основной частоте
+        if (self.flag_exist_cur_harm != True) and (self.flag_exist_vol_harm != True):    # Если нет гармоник проверка только по основной частоте
             #self.SET_cmd()
             delta = 2.0 # [%]
             self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)         
             #3.6.1 - Если с первого раза точка не установилась, то попробовать еще раз
             if self.is_PSI_pnt_set == False:                            
                 counter_for_reset = 0
-                maxIter_reset_cmd = 50
-                while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
+                maxIter_reset_cmd = 20
+                while((self.is_PSI_pnt_set == False)and(counter_for_reset < maxIter_reset_cmd)):
                     #print("Trying to set PSI point again " + str(counter_for_reset+1))
                     self.SET_cmd()
                     self.is_PSI_pnt_set = self.check_PSI_point_main_freq(sig, log_time_file,delta)
@@ -296,7 +302,7 @@ class C_MTE_Generator(C_MTE_device):
         else:
             # сначала проверка по основной частоте с большой дельта
             counter_for_reset = 0
-            maxIter_reset_cmd = 50
+            maxIter_reset_cmd = 20
             is_PSI_pnt_set = False
             delta = 20 # [%]
             while((is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
@@ -312,7 +318,7 @@ class C_MTE_Generator(C_MTE_device):
             self.is_PSI_pnt_set = self.check_PSI_point_harms(sig)
 
             counter_for_reset = 0
-            maxIter_reset_cmd = 3
+            maxIter_reset_cmd = 10
 
             while((self.is_PSI_pnt_set != True)and(counter_for_reset < maxIter_reset_cmd)):
                 print("Trying to set PSI point HARMS again " + str(counter_for_reset+1))
@@ -394,13 +400,13 @@ class C_MTE_Generator(C_MTE_device):
             etalon_vals.append(t_phase)
 
         ##########################
-        N_total_iter = 4        #  Сколько раз повторно спрашиваем измерения с генератора МТЕ
+        N_total_iter = 5        #  Сколько раз повторно спрашиваем измерения с генератора МТЕ
         #delta = 2               # [%]
         margin_angle = 2        # [град.]
-        set_PSI_point_flag = [] # список флагов: пройдена ли проверка по этому параметру. 
+        #set_PSI_point_flag = [] # список флагов: пройдена ли проверка по этому параметру. 
         #Сигнал считается установленным когда по всем параметрам пройдена проверка. Наиболее часто не устанавливается сигнал тока фазы А
 
-        self.ser_port.timeout = 0.3     # интервал между опросами коротких команд
+        self.ser_port.timeout = 0.2     # интервал между опросами коротких команд
         ##########################
         #print("check_PSI_point Generator")
 
@@ -415,11 +421,12 @@ class C_MTE_Generator(C_MTE_device):
             #
             wr_str = "check_gen_iter, "+str(check_gen_iter+1)+"\r\n"
             log_time_file.write(wr_str)
-            ##print(wr_str)
+            #print(wr_str)
             #
             self.ser_port.flushInput()
             self.ser_port.flushOutput()         
-            set_PSI_point_flag.clear()
+            #set_PSI_point_flag.clear()
+            set_PSI_point_flag = []
             check_set_PSI = False
 
             for ask_idx in range(len(ask_str_mas)):
@@ -515,7 +522,6 @@ class C_MTE_Generator(C_MTE_device):
     #-----Обработчик 'проверки по генератору' по гармоникам
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    
     def check_PSI_point_harms(self,sig):
         # Алгоритм работы следующий:
         # запрсили-сохранили-распарсили все спектры с генератора
@@ -531,9 +537,9 @@ class C_MTE_Generator(C_MTE_device):
             for idx_ph in range(len(numPhase_mas)):         # цикл: по фазам А/B/C
                 self.calculate_spectrum_by_generator(numUI_mas[idx_ui],\
                     numPhase_mas[idx_ph],idx_ph+idx_ui*3)
-                print("idx_list "+str(idx_list))
+                #print("idx_list "+str(idx_list))
                 idx_list += 1
-
+        '''
         print("self.list_Ua_ang, "+str(len(self.list_Ua_ang))+"\r\n"+\
                 " self.list_Ub_ang, "+str(len(self.list_Ub_ang))+"\r\n"+\
                 " self.list_Uc_ang, "+str(len(self.list_Uc_ang))+"\r\n"+\
@@ -547,6 +553,7 @@ class C_MTE_Generator(C_MTE_device):
                 " self.list_Ia_mod, "+str(len(self.list_Ia_mod))+"\r\n"+\
                 " self.list_Ib_mod, "+str(len(self.list_Ib_mod))+"\r\n"+\
                 " self.list_Ic_mod, "+str(len(self.list_Ic_mod))+"\r\n" )
+        '''
 
         #print("list_magn " + str(len(list_magn)))
         #print("list_angl " + str(len(list_angl)))
@@ -588,9 +595,9 @@ class C_MTE_Generator(C_MTE_device):
 
                 
                 if cur_delta > delta:
-                    print("Error on phase "+str(idx_phase)+" harm num: "+str(idx_harm_num)+\
-                          ": measered_ampl: " + str(measered_ampl)+" etalon_ampl: " + str(etalon_ampl) +\
-                                " calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
+                    #print("Error on phase "+str(idx_phase)+" harm num: "+str(idx_harm_num)+\
+                    #     ": measered_ampl: " + str(measered_ampl)+" etalon_ampl: " + str(etalon_ampl) +\
+                    #            " calc delta %: "+str(cur_delta)+" max delta %: "+str(delta))
                     set_PSI_point_flag = False
                 #else:   set_PSI_point_flag = True
 
@@ -679,7 +686,7 @@ class C_MTE_Generator(C_MTE_device):
     
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
-    #-----Измерение спектра (генератор)
+    #-----Получить измерения спектра (генератор)
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def get_spectrum_result(self):
@@ -748,7 +755,7 @@ class C_MTE_Generator(C_MTE_device):
         ### End распарсить значения -> сгруппировать Ре и Им части в массивы ->
         
         # шапка таблицы результатов измерения гармоник
-        print('{0:^4s} {1:^14s} {2:^14s}'.format("harm №", "Abs","Ang, [°]"))
+        #print('{0:^4s} {1:^14s} {2:^14s}'.format("harm №", "Abs","Ang, [°]"))
 
         #########################################
         #########################################
@@ -774,15 +781,13 @@ class C_MTE_Generator(C_MTE_device):
                 ###list_a.append(0) 
                 self.list_name_a[num_list_m].append( 0.0) 
 
-            print('{0:4d} {1:14f} {2:14f}'.format(idx, self.list_name_m[num_list_m][idx], self.list_name_a[num_list_m][idx]))
+            #print('{0:4d} {1:14f} {2:14f}'.format(idx, self.list_name_m[num_list_m][idx], self.list_name_a[num_list_m][idx]))
 
         #####################################
         #####################################
         #####################################
         #self.list_name_m[num_list_m] = list_m
         #self.list_name_m[num_list_m] = list_a
-
-        # Передавать в функцию номер массива и сделать тут перекопирование в нужный self. массив. Вместо передачи ссылки как аргумента функции
 
         #! Вызовы функции Дмитрия: "получить значения спектра:  1) амплитуд гармоник [list_module] (0..31) \
         #                                                       2) фаз гармоник      [list_angle]  (0..31) \ 

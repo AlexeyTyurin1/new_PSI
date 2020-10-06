@@ -42,10 +42,10 @@ class RequestBinom():
             self.connect_session = True
         # check channel names from binom
         #'''
-        out_ch = self.__ask_channel_out_names()
+        #out_ch = self.__ask_channel_out_names()
+        self.__ask_channel_out_names()
         self.__check_received_channel_names()
         #'''
-
 
     def close_channel(self):
         if self.channel_open:
@@ -95,8 +95,6 @@ class RequestBinom():
 
             request = "~svgcurrent?name=db:PSI_data"
             """
-            
-
             ~svgcurrent?name=[имя данных] [& shortvalue=«1»]
             Запрос текущих значений. Используется только для чтения данных из канала вывода.
             По данному запросу будут переданы текущие данные (аналогично «~svgdata»).
@@ -104,7 +102,7 @@ class RequestBinom():
             """
 
             r = self.session.get(self.__create_request(request))
-            print("Status code: ", r.status_code)
+            #print("Status code: ", r.status_code)
             print("Read data len ", len(r.content))
             self.__parse_output(r.content)
             cnt -= 1
@@ -181,24 +179,17 @@ class RequestBinom():
         time_uid_offset = 8
         # "q" == long long
         nanosec_time = struct.unpack_from("q", content, time_uid_offset)[0]
-        microsec_time = int(nanosec_time / 1000)
-
-        mod_microsec = int(microsec_time % (1000000))
-
-        part_of_sec = mod_microsec / 1000000.0
-
-        sec_time = int(microsec_time / 1000000)
+        #microsec_time = int(nanosec_time / 1000)
+        mod_microsec = int(nanosec_time % (1000000000))
+        #part_of_sec = mod_microsec / 1000000.0
+        sec_time = int(nanosec_time / 1000000000)
         dt_time = datetime.datetime.fromtimestamp(sec_time)
-
-
-        dt_time = dt_time + datetime.timedelta(microseconds=mod_microsec)
-
-
+        #####dt_time = dt_time + datetime.timedelta(microseconds=mod_microsec)
         self.blob_time = dt_time
 
         #print(str(nanosec_time)+ "   nanosec_time")
         #print(str(microsec_time)+"   microsec_time")
-        print(str(dt_time)+      "   dt_time")
+        print(str(dt_time)+      "   BLOB_time")
 
         #print(str(mod_microsec)+ "   mod_microsec")
         #print(str(part_of_sec)+  "   part_of_sec")
@@ -230,22 +221,15 @@ class RequestBinom():
             print("{:^10s}".format(name), "=", value)
         #'''
         #pass
- 
-
-
 
 # may be we don't need this feature now it placed in names_parameters
 # variable_names = ("P", "Ua", "Ub", "Uc", "AngUab", "AngUbc", "AngUca", "Uab", "Ubc", "Uca", "Ia", "Ib", "Ic", "AngIab", "AngIbc", "AngIca", "AngSym1")
-
-
-
 
 UID_DBnames_mapping = dict()
 DBNames_value_mapping = dict()
 
 def create_request_string(req):
     return prot + ip_addr + "/" + req
-
 
 def clear_terminal():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -337,8 +321,6 @@ def ask_channel_out_names(binom_sess):
         if len(record) > 2:
             res[int(record[0])] = record[1]
     return res
-        
-
 
 
 def read_binom_data(binom_sess, open=False):

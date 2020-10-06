@@ -55,7 +55,6 @@ class Signal:
     
     def get_main_freq_vector(self):
         '''
-
         '''
         return self.set_harmonics[0]
 
@@ -217,13 +216,9 @@ class Signal:
         modB = self.set_harmonics[0].get_ampl("Ib")
         modC = self.set_harmonics[0].get_ampl("Ic")
 
-        f_mod_a = (modA <= 0.001)
-        f_mod_b = (modB <= 0.001)
-        f_mod_c = (modC <= 0.001)
-
-        if f_mod_a: cosPhi_angles[0] = 0.0
-        if f_mod_b: cosPhi_angles[1] = 0.0
-        if f_mod_c: cosPhi_angles[2] = 0.0
+        if modA <= 0.001: cosPhi_angles[0] = 0.0
+        if modB <= 0.001: cosPhi_angles[1] = 0.0
+        if modC <= 0.001: cosPhi_angles[2] = 0.0
 
         nm_angles = names_par.get_measured_cosPhi_names()
         self.meas_result.update(**{angle : np.cos(np.deg2rad(val)) for angle, val in zip(nm_angles, cosPhi_angles)})
@@ -275,8 +270,6 @@ class Signal:
         power_val = np.append(power_val, (full_active_power, full_reactive_power, full_power))
         self.meas_result.update(**{pwr_name : val for pwr_name, val in zip(names_par.get_measured_power_names(), power_val)})
 
-        pass
-
         
     def calc_linear_voltage(self, name="Uab"):
         '''
@@ -301,7 +294,6 @@ class Signal:
         self.__calc_symmetrical_sequences()
 
         self.__calc_power()
-
 
 
 class MeasuredSignal:

@@ -15,7 +15,8 @@ def create_dict_test_points(csv_file_name):
             csv_dict[num_pnt + 1] = pnt_param
 
     # here make measurement signal
-    for num_pnt in range(1, 156):
+    #for num_pnt in range(1, 156):
+    for num_pnt in range(1, 157):
         make_signal_from_csv_source(csv_dict, num_pnt)
    
 class MeasurementStorage(): # make as singleton!
@@ -118,8 +119,13 @@ class PSIPointMesurement:
             
             #delta_MTE_CNT   =  abs(mte_CNT_meas_res.results[name] - etalon_val.results[name])
             #delta_MTE_CNT   = 0
-            delta_MTE_GEN   =  abs(mte_GEN_meas_res.results[name] - mte_CNT_meas_res.results[name])
-            delta_Binom     =  abs(binom_meas_res.results[name]   - mte_CNT_meas_res.results[name]) # use abs fund
+            if name[0] == "F":      # Выяснилось (29,09,2020), что точности измерений частоты счетчиком МТЕ не достаточно,
+                                    # Однако, сигнал на выходе генератора МТЕ стабильный (49,997 - 50,003 Гц)
+                delta_MTE_GEN   =  abs(mte_GEN_meas_res.results[name] - etalon_val.results[name])
+                delta_Binom     =  abs(binom_meas_res.results[name]   - etalon_val.results[name]) # use abs fund
+            else:
+                delta_MTE_GEN   =  abs(mte_GEN_meas_res.results[name] - mte_CNT_meas_res.results[name])
+                delta_Binom     =  abs(binom_meas_res.results[name]   - mte_CNT_meas_res.results[name]) # use abs fund
             
             '''
             delta_MTE_CNT   =  abs(mte_CNT_meas_res.results[name] - etalon_val.results[name])
@@ -142,7 +148,8 @@ class PSIPointMesurement:
             #-Проверка на ноль! Номинал тока может быть равен нулю!!!!
             #---------------------------------#
             try:
-                if abs(etalon_val.results[name]) <= 0.00001:
+                #if abs(etalon_val.results[name]) <= 0.00001:
+                if abs(mte_CNT_meas_res.results[name]) <= 0.00001:
                     mte_GEN_meas_res.errors_rel[name] = 0.0
                     binom_meas_res.errors_rel[name] = 0.0
                     #continue

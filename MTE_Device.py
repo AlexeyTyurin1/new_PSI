@@ -113,39 +113,71 @@ class C_MTE_device:
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     #-----Парсинг строки ответа "частоты"
-    #-----------------------------------------------------------------------------------#
-    #-----------------------------------------------------------------------------------#
-    def parse_MTE_answer_Freq(self,text):             
-        mStr = text.split(",")               # Делим строку результата на блоки.
-        if len(mStr) == 2:
-            if mStr[1].startswith("--") or (len(mStr[1]) <= 1):
-                vFreq = 0                  # Нет значения в результатах измерений 
-            else:
-                lastVal = mStr[1]       # Убираем в конце символ <CR>
-                vFreq = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
-        else:
-            print("parse_MTE_answer_Freq_No_CR:  len(mStr) != 2   len(mStr) = "+str(len(mStr)))
-            vFreq = -1 
+    '''
+    >>> try:
+    ...     for line in f:
+    ...         ints.append(int(line))
+    ... except ValueError:
+    ...     print('Это не число. Выходим.')
+    ... except Exception:
+    ...     print('Это что ещё такое?')
+    ... else:
+    ...     print('Всё хорошо.')
+    ... finally:
+    ...     f.close()
+    ...     print('Я закрыл файл.')
+    ...     # Именно в таком порядке: try, группа except, затем else, и только потом finally.
+    '''
 
-        return vFreq
+    #-----------------------------------------------------------------------------------#
+    #-----------------------------------------------------------------------------------#
+    def parse_MTE_answer_Freq(self,text): 
+        try:            
+            mStr = text.split(",")               # Делим строку результата на блоки.
+            if len(mStr) == 2:
+                if mStr[1].startswith("--") or (len(mStr[1]) <= 1):
+                    vFreq = 0                  # Нет значения в результатах измерений 
+                else:
+                    lastVal = mStr[1]       # Убираем в конце символ <CR>
+                    vFreq = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
+            else:
+                #print("parse_MTE_answer_Freq_No_CR:  len(mStr) != 2   len(mStr) = "+str(len(mStr)))
+                vFreq = -1 
+        except Exception:
+            print('parse_MTE_answer_Freq Error')
+            vFreq = -1 
+        else:
+            #print('Всё хорошо.')
+            pass
+        finally:
+            return vFreq
+
+        
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     #-----Парсинг строки ответа "частоты"
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def parse_MTE_answer_Freq_text(self,text):             
-        mStr = text.split("=")               # Делим строку результата на блоки.
-        if len(mStr) == 2:
-            if mStr[1].startswith("--") or (len(mStr[1]) <= 1):
-                vFreq = 0                  # Нет значения в результатах измерений 
+        try:
+            mStr = text.split("=")               # Делим строку результата на блоки.
+            if len(mStr) == 2:
+                if mStr[1].startswith("--") or (len(mStr[1]) <= 1):
+                    vFreq = 0                  # Нет значения в результатах измерений 
+                else:
+                    lastVal = mStr[1]       # Убираем в конце символ <CR>
+                    vFreq = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
             else:
-                lastVal = mStr[1]       # Убираем в конце символ <CR>
-                vFreq = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
-        else:
-            print("parse_MTE_answer_Freq_No_CR:  len(mStr) != 2   len(mStr) = "+str(len(mStr)))
+                #print("parse_MTE_answer_Freq_No_CR:  len(mStr) != 2   len(mStr) = "+str(len(mStr)))
+                vFreq = -1 
+        except Exception:
+            print('parse_MTE_answer_Freq_text Error')
             vFreq = -1 
-
-        return vFreq
+        else:
+            #print('Всё хорошо.')
+            pass
+        finally:
+            return vFreq
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
@@ -153,72 +185,93 @@ class C_MTE_device:
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def parse_MTE_answer(self):              # парсить ответ от МТЕ по общим параметрам: 3 числа по 3 фазам
+        try:
+            mStr = self.textFromMTE.split(",")               # Делим строку результата на блоки.
+            len_mStr = len(mStr)
 
-        mStr = self.textFromMTE.split(",")               # Делим строку результата на блоки.
-        len_mStr = len(mStr)
-
-        if len_mStr >1:
-            if mStr[1].startswith("--") or (len(mStr[1]) <= 1): #: # фаза А
-                vA = 0                  # Нет значения в результатах измерений 
+            if len_mStr >1:
+                if mStr[1].startswith("--") or (len(mStr[1]) <= 1): #: # фаза А
+                    vA = 0                  # Нет значения в результатах измерений 
+                else:
+                    vA = float(mStr[1])     # переводим значение во float
             else:
-                vA = float(mStr[1])     # переводим значение во float
-        else:
-            print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+                #print("parse_MTE_answer_No_CR:  len_mStr < 1   mStr = " + str(mStr))
+                vA = -1
+
+            if len_mStr >2:
+                if mStr[2].startswith("--") or (len(mStr[2]) <= 1): #: # фаза Б
+                    vB = 0                  # Нет значения в результатах измерений 
+                else:
+                    vB = float(mStr[2])     # переводим значение во float
+            else:
+                #print("parse_MTE_answer_No_CR:  len_mStr < 2   mStr = " + str(mStr))
+                vB = -1
+
+            if len_mStr >3:
+                if (mStr[3].startswith("--")) or (len(mStr[3]) <= 1): #: # фаза C
+                    vC = 0                  # Нет значения в результатах измерений 
+                else:
+                    lastVal = mStr[3]
+                    vC = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
+            else:
+                vC = -1
+
+        except Exception:
+            print('parse_MTE_answer Error')
             vA = -1
-
-        if len_mStr >2:
-            if mStr[2].startswith("--") or (len(mStr[2]) <= 1): #: # фаза Б
-                vB = 0                  # Нет значения в результатах измерений 
-            else:
-                vB = float(mStr[2])     # переводим значение во float
-        else:
-            print("parse_MTE_answer_No_CR:  len_mStr < 2   mStr = " + str(mStr))
             vB = -1
-
-        if len_mStr >3:
-            if (mStr[3].startswith("--")) or (len(mStr[3]) <= 1): #: # фаза C
-                vC = 0                  # Нет значения в результатах измерений 
-            else:
-                lastVal = mStr[3]
-                vC = float(lastVal[0:len(lastVal)-1:1])     # переводим значение во float
+            vC = -1
         else:
-            print("parse_MTE_answer_No_CR:  len_mStr < 3   mStr = " + str(mStr))
-            vC = -1 
-
-        return vA, vB, vC
-
+            #print('Всё хорошо.')
+            pass
+        finally:
+            return vA, vB, vC
+ 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     #-----Парсинг строки ответа из 3-х параметров: фаза А, фаза В, фаза С
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
     def parse_MTE_answer_text(self,text):              # парсить ответ от МТЕ по общим параметрам: 3 числа по 3 фазам
-        mStr = text.split(",")               # Делим строку результата на блоки.
-        len_mStr = len(mStr)
+        
         result_list = []
+        
+        try:
+            mStr = text.split(",")               # Делим строку результата на блоки.
+            len_mStr = len(mStr)
+            
 
-        if len_mStr >1:
-            if mStr[1].startswith("--") or (len(mStr[1]) <= 1): result_list.append(0.0) # фаза А   # Нет значения в результатах измерений 
-            else: result_list.append(float(mStr[1]))
-        else:
-            print("parse_MTE_answer_text:  len_mStr < 1   mStr = " + str(mStr))
+            if len_mStr >1:
+                if mStr[1].startswith("--") or (len(mStr[1]) <= 1): result_list.append(0.0) # фаза А   # Нет значения в результатах измерений 
+                else: result_list.append(float(mStr[1]))
+            else:
+                #print("parse_MTE_answer_text:  len_mStr < 1   mStr = " + str(mStr))
+                result_list.append(-1.0)
+
+            if len_mStr >2:
+                if mStr[2].startswith("--") or (len(mStr[2]) <= 1): result_list.append(0.0)
+                else: result_list.append(float(mStr[2]))
+            else:
+                #print("parse_MTE_answer_text:  len_mStr < 2   mStr = " + str(mStr))
+                result_list.append(-1.0)
+
+            if len_mStr >3:
+                if (mStr[3].startswith("--")) or (len(mStr[3]) <= 1): result_list.append(0.0)
+                else: result_list.append(float(mStr[3][0:len(mStr[3])-1:1]))
+            else:
+                #print("parse_MTE_answer_text:  len_mStr < 3   mStr = " + str(mStr))
+                result_list.append(-1.0)
+
+        except Exception:
+            print('parse_MTE_answer_text Error')
             result_list.append(-1.0)
-
-        if len_mStr >2:
-            if mStr[2].startswith("--") or (len(mStr[2]) <= 1): result_list.append(0.0)
-            else: result_list.append(float(mStr[2]))
-        else:
-            print("parse_MTE_answer_text:  len_mStr < 2   mStr = " + str(mStr))
             result_list.append(-1.0)
-
-        if len_mStr >3:
-            if (mStr[3].startswith("--")) or (len(mStr[3]) <= 1): result_list.append(0.0)
-            else: result_list.append(float(mStr[3][0:len(mStr[3])-1:1]))
-        else:
-            print("parse_MTE_answer_text:  len_mStr < 3   mStr = " + str(mStr))
             result_list.append(-1.0)
-
-        return result_list
+        else:
+            #print('Всё хорошо.')
+            pass
+        finally:
+            return result_list
 
     #-----------------------------------------------------------------------------------#
     #-----------------------------------------------------------------------------------#
